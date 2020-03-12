@@ -168,7 +168,6 @@ public class KryoUtil {
      * @param <T>       原对象的类型
      * @return 原对象
      */
-    @SuppressWarnings("unchecked")
     public static <T> T readObjectFromByteArray(byte[] byteArray, Class<T> clazz) {
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArray);
         Input input = new Input(byteArrayInputStream);

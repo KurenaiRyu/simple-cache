@@ -45,6 +45,7 @@ public class RedisShardCacheTest {
   }
 
   @Data
+  static
   class User {
     private String name;
     private int age;
