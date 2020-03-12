@@ -4,6 +4,7 @@ import io.github.natsusai.cache.core.Cache;
 import io.github.natsusai.cache.core.util.KryoUtil;
 import lombok.Getter;
 import redis.clients.jedis.BinaryJedis;
+import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
 import java.util.ArrayList;
@@ -20,9 +21,9 @@ import java.util.stream.Collectors;
  */
 
 @Getter
-public class JedisCache extends JedisCacheAbstract implements Cache {
+public class JedisCache extends JedisCacheAbstract implements Cache<Jedis> {
 
-  //TODO: 自动装载配置
+  //TODO : 测试bytes key 批量模糊删除（namespace）
 
   public JedisCache(String prefix, JedisPool pool) {
     super(prefix, pool);
@@ -127,7 +128,12 @@ public class JedisCache extends JedisCacheAbstract implements Cache {
 
   @Override
   public <T> Boolean setIfAbsent(String key, String namespace, long ttl, T cache) {
-    return null;
+    return get(jedis -> {
+      byte[] bytesKey = buildCacheKeyBytes(key, namespace);
+      boolean result = jedis.setnx(bytesKey, KryoUtil.writeToByteArray(cache)) > 0;
+      jedis.pexpire(bytesKey, ttl);
+      return result;
+    });
   }
 
   @Override
@@ -165,20 +171,10 @@ public class JedisCache extends JedisCacheAbstract implements Cache {
   }
 
   @Override
-  public Boolean multiRemove(List<String> keys, List<String> namespaces) {
+  public Boolean multiRemove(Collection<String> keys, String namespace) {
     return get(jedis -> {
       List<byte[]> delKeys = new ArrayList<>();
-      if (keys.size() == 1) {
-        String key = keys.get(0);
-        namespaces.forEach(n -> delKeys.add(buildCacheKeyBytes(key, n)));
-      } else if (namespaces.size() == 1) {
-        String namespace = namespaces.get(0);
-        keys.forEach(k -> delKeys.add(buildCacheKeyBytes(k, namespace)));
-      } else {
-        for (int i = 0; i < Math.min(keys.size(), namespaces.size()); i++) {
-          delKeys.add(buildCacheKeyBytes(keys.get(i), namespaces.get(i)));
-        }
-      }
+      keys.forEach(k -> delKeys.add(buildCacheKeyBytes(k, namespace)));
       return jedis.del(delKeys.toArray(new byte[0][0])) > 0;
     });
   }
@@ -201,8 +197,8 @@ public class JedisCache extends JedisCacheAbstract implements Cache {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> T getClient() {
-    return (T) pool.getResource();
+  public Jedis getClient() {
+    return pool.getResource();
   }
 
   /**

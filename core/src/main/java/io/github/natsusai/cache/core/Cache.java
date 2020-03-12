@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * 缓存接口类
@@ -17,12 +16,13 @@ import java.util.stream.Collectors;
  * <p>
  * 注意：并不是所有实现都支持所提供的方法，当某个实现被调用了不支持的方法时，将会抛出一个Runtime异常
  * </p>
+ * @param <C> 客户端类型
  * @see NotSupportOperationException
  * @author liufuhong
  * @since 2019-08-07 13:20
  */
 
-public interface Cache {
+public interface Cache<C> {
 
   long VOLATILITY_TIME = 10 * 1000L;//短存时间
   //TODO：处理缓存短时间内大面积失效的风险
@@ -370,12 +370,11 @@ public interface Cache {
    * </p>
    * 若其中一个列表只有一个，则以1对n进行处理
    * @param keys 缓存标识/id集合
-   * @param classes 缓存的class对象集合
+   * @param clazz 缓存的class对象集合
    * @return 执行结果
    */
-  default Boolean multiRemoveByClazz(List<String> keys, List<Class> classes) {
-    List<String> namespaces = classes.stream().map(Class::getName).collect(Collectors.toList());
-    return multiRemove(keys, namespaces);
+  default Boolean multiRemoveByClazz(Collection<String> keys, Class clazz) {
+    return multiRemove(keys, clazz.getName());
   }
 
 
@@ -384,10 +383,10 @@ public interface Cache {
    * </p>
    * 若其中一个列表只有一个，则以1对n进行处理
    * @param keys 缓存标识/id集合
-   * @param namespaces 命名空间（类似组的概念）
+   * @param namespace 命名空间（类似组的概念）
    * @return 执行结果
    */
-  Boolean multiRemove(List<String> keys, List<String> namespaces);
+  Boolean multiRemove(Collection<String> keys, String namespace);
 
   /**
    * 移除指定缓存（非模糊匹配）
@@ -424,8 +423,7 @@ public interface Cache {
 
   /**
    * 获取调用客户端实例（不进行包装的客户端）
-   * @param <T> 客户端类型
    * @return 客户端实例
    */
-  <T> T getClient();
+  C getClient();
 }

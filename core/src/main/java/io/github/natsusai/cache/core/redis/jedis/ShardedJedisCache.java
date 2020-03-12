@@ -5,6 +5,7 @@ import io.github.natsusai.cache.core.exception.NotSupportOperationException;
 import io.github.natsusai.cache.core.util.KryoUtil;
 import lombok.Getter;
 import redis.clients.jedis.JedisShardInfo;
+import redis.clients.jedis.ShardedJedis;
 import redis.clients.jedis.ShardedJedisPool;
 
 import java.util.ArrayList;
@@ -20,24 +21,24 @@ import java.util.Map;
  */
 
 @Getter
-public class JedisShardShardCache extends JedisShardCacheAbstract implements Cache {
+public class ShardedJedisCache extends ShardedJedisCacheAbstract implements Cache<ShardedJedis> {
 
   //TODO: 自动装载配置
 
 
-  public JedisShardShardCache(String prefix, ShardedJedisPool pool) {
+  public ShardedJedisCache(String prefix, ShardedJedisPool pool) {
     super(prefix, pool);
   }
 
-  public JedisShardShardCache(String prefix, List<JedisShardInfo> shardInfos) {
+  public ShardedJedisCache(String prefix, List<JedisShardInfo> shardInfos) {
     super(prefix, shardInfos);
   }
 
-  public JedisShardShardCache(String prefix, List<String> hosts, List<Integer> ports) {
+  public ShardedJedisCache(String prefix, List<String> hosts, List<Integer> ports) {
     super(prefix, hosts, ports);
   }
 
-  public JedisShardShardCache(String prefix, List<String> hosts, List<Integer> ports, List<String> passwords) {
+  public ShardedJedisCache(String prefix, List<String> hosts, List<Integer> ports, List<String> passwords) {
     super(prefix, hosts, ports, passwords);
   }
 
@@ -110,7 +111,12 @@ public class JedisShardShardCache extends JedisShardCacheAbstract implements Cac
 
   @Override
   public <T> Boolean setIfAbsent(String key, String namespace, long ttl, T cache) {
-    return null;
+    return get(jedis ->{
+      byte[] bytesKey = buildCacheKeyBytes(key, namespace);
+      boolean result = jedis.setnx(bytesKey, KryoUtil.writeToByteArray(cache)) > 0;
+      jedis.pexpire(bytesKey, ttl);
+      return result;
+    });
   }
 
   @Override
@@ -135,8 +141,9 @@ public class JedisShardShardCache extends JedisShardCacheAbstract implements Cac
   }
 
   @Override
-  public Boolean multiRemove(List<String> keys, List<String> namespaces) {
-    throw new NotSupportOperationException();
+  public Boolean multiRemove(Collection<String> keys, String namespace) {
+    execute(jedis -> keys.forEach(k -> jedis.del(buildCacheKeyBytes(k, namespace))));
+    return true;
   }
 
   @Override
@@ -155,9 +162,8 @@ public class JedisShardShardCache extends JedisShardCacheAbstract implements Cac
   }
 
   @Override
-  @SuppressWarnings("unchecked")
-  public <T> T getClient() {
-    return (T) pool.getResource();
+  public ShardedJedis getClient() {
+    return pool.getResource();
   }
 
   /**

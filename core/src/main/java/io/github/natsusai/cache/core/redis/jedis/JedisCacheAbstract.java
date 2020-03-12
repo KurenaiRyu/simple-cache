@@ -30,8 +30,8 @@ public abstract class JedisCacheAbstract {
    * 通常为应用名称
    * </p>
    */
-  private final String PREFIX;
-  private final String CONNECTOR = ":";
+  protected final String PREFIX;
+  protected final String CONNECTOR = ":";
 
   public JedisCacheAbstract(String prefix, JedisPool pool) {
     this.PREFIX = prefix == null ? "" : prefix;

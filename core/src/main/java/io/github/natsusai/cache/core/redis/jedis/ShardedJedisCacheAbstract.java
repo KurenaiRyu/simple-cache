@@ -22,7 +22,7 @@ import java.util.stream.Stream;
  */
 
 @Getter
-public abstract class JedisShardCacheAbstract {
+public abstract class ShardedJedisCacheAbstract {
 
   protected final ShardedJedisPool pool;
 
@@ -32,14 +32,14 @@ public abstract class JedisShardCacheAbstract {
    * 通常为应用名称
    * </p>
    */
-  private final String PREFIX;
-  private final String CONNECTOR = ":";
+  protected final String PREFIX;
+  protected final String CONNECTOR = ":";
 
   /**
    * @param prefix 缓存键值前缀
    * @param pool 缓存池
    */
-  public JedisShardCacheAbstract(String prefix, ShardedJedisPool pool) {
+  public ShardedJedisCacheAbstract(String prefix, ShardedJedisPool pool) {
     this.PREFIX = prefix == null ? "" : prefix;
     this.pool = pool;
   }
@@ -49,7 +49,7 @@ public abstract class JedisShardCacheAbstract {
    * @param prefix 缓存键值前缀
    * @param shardInfos 节点配置信息
    */
-  public JedisShardCacheAbstract(String prefix, List<JedisShardInfo> shardInfos) {
+  public ShardedJedisCacheAbstract(String prefix, List<JedisShardInfo> shardInfos) {
     this.PREFIX = prefix == null ? "" : prefix;
     this.pool = new ShardedJedisPool(new JedisPoolConfig(), shardInfos);
   }
@@ -58,7 +58,7 @@ public abstract class JedisShardCacheAbstract {
    * 构建缓存
    * @param prefix 缓存键值前缀
    */
-  public JedisShardCacheAbstract(String prefix, List<String> hosts, List<Integer> ports) {
+  public ShardedJedisCacheAbstract(String prefix, List<String> hosts, List<Integer> ports) {
     this.PREFIX = prefix == null ? "" : prefix;
     List<JedisShardInfo> shardInfos = new ArrayList<>();
     if (hosts.size() == 1) {
@@ -75,7 +75,7 @@ public abstract class JedisShardCacheAbstract {
     this.pool = new ShardedJedisPool(new JedisPoolConfig(), shardInfos);
   }
 
-  public JedisShardCacheAbstract(String prefix, List<String> hosts, List<Integer> ports, List<String> passwords) {
+  public ShardedJedisCacheAbstract(String prefix, List<String> hosts, List<Integer> ports, List<String> passwords) {
     this.PREFIX = prefix == null ? "" : prefix;
     List<JedisShardInfo> shardInfos = new ArrayList<>();
     if (hosts.size() == 1) {
