@@ -1,4 +1,4 @@
-package com.iotlead.cache.core.redis;
+package com.iotlead.cache.core.redis.jedis;
 
 import com.iotlead.cache.core.Cache;
 import com.iotlead.cache.core.util.KryoUtil;
@@ -20,24 +20,24 @@ import java.util.stream.Collectors;
  */
 
 @Getter
-public class RedisCache extends RedisCacheAbstract implements Cache {
+public class JedisCache extends JedisCacheAbstract implements Cache {
 
-  //TODO:
+  //TODO: 自动装载配置
 
-  public RedisCache(JedisPool pool) {
-    super(pool);
+  public JedisCache(String prefix, JedisPool pool) {
+    super(prefix, pool);
   }
 
-  public RedisCache(String host, int port) {
-    super(host, port);
+  public JedisCache(String prefix, String host, int port) {
+    super(prefix, host, port);
   }
 
-  public RedisCache(String host, int port, String password) {
-    super(host, port, password);
+  public JedisCache(String prefix, String host, int port, String password) {
+    super(prefix, host, port, password);
   }
 
-  public RedisCache(String host, int port, String password, int database) {
-    super(host, port, password, database);
+  public JedisCache(String prefix, String host, int port, String password, int database) {
+    super(prefix, host, port, password, database);
   }
 
   @Override

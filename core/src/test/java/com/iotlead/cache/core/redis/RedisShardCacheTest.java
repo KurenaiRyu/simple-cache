@@ -1,6 +1,7 @@
 package com.iotlead.cache.core.redis;
 
 import com.iotlead.cache.core.Cache;
+import com.iotlead.cache.core.redis.jedis.JedisCache;
 import com.iotlead.cache.core.util.KryoUtil;
 import lombok.Data;
 import org.junit.BeforeClass;
@@ -8,13 +9,13 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class RedisCacheTest {
+public class RedisShardCacheTest {
 
   private static Cache cache;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    cache = new RedisCache("192.168.8.210", 6379, "123456", 15);
+    cache = new JedisCache("test", "192.168.8.210", 6379, "123456", 15);
   }
 
   @Test

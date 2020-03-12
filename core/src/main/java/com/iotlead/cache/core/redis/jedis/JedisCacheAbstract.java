@@ -1,10 +1,10 @@
-package com.iotlead.cache.core.redis;
+package com.iotlead.cache.core.redis.jedis;
 
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.Protocol;
 
 import java.util.function.Consumer;
@@ -20,7 +20,7 @@ import java.util.stream.Stream;
  */
 
 @Getter
-public abstract class RedisCacheAbstract {
+public abstract class JedisCacheAbstract {
 
   protected final JedisPool pool;
 
@@ -30,23 +30,27 @@ public abstract class RedisCacheAbstract {
    * 通常为应用名称
    * </p>
    */
-  private final String PREFIX = "";
+  private final String PREFIX;
   private final String CONNECTOR = ":";
 
-  public RedisCacheAbstract(JedisPool pool) {
+  public JedisCacheAbstract(String prefix, JedisPool pool) {
+    this.PREFIX = prefix == null ? "" : prefix;
     this.pool = pool;
   }
 
-  public RedisCacheAbstract(String host, int port) {
+  public JedisCacheAbstract(String prefix, String host, int port) {
+    this.PREFIX = prefix == null ? "" : prefix;
     this.pool = new JedisPool(host, port);
   }
 
-  public RedisCacheAbstract(String host, int port, String password) {
-    this.pool = new JedisPool(new GenericObjectPoolConfig(), host, port, Protocol.DEFAULT_TIMEOUT, password);
+  public JedisCacheAbstract(String prefix, String host, int port, String password) {
+    this.PREFIX = prefix == null ? "" : prefix;
+    this.pool = new JedisPool(new JedisPoolConfig(), host, port, Protocol.DEFAULT_TIMEOUT, password);
   }
 
-  public RedisCacheAbstract(String host, int port, String password, int database) {
-    this.pool = new JedisPool(new GenericObjectPoolConfig(), host, port, Protocol.DEFAULT_TIMEOUT, password, database);
+  public JedisCacheAbstract(String prefix, String host, int port, String password, int database) {
+    this.PREFIX = prefix == null ? "" : prefix;
+    this.pool = new JedisPool(new JedisPoolConfig(), host, port, Protocol.DEFAULT_TIMEOUT, password, database);
   }
 
   /**

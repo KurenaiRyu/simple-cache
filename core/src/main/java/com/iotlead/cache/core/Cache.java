@@ -1,5 +1,7 @@
 package com.iotlead.cache.core;
 
+import com.iotlead.cache.core.exception.NotSupportOperationException;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -9,9 +11,13 @@ import java.util.stream.Collectors;
 
 /**
  * 缓存接口类
- *
+ * <p>
  * 除了rawXXX方法外，都将自动构建缓存key
- *
+ * </p>
+ * <p>
+ * 注意：并不是所有实现都支持所提供的方法，当某个实现被调用了不支持的方法时，将会抛出一个Runtime异常
+ * </p>
+ * @see com.iotlead.cache.core.exception.NotSupportOperationException
  * @author liufuhong
  * @since 2019-08-07 13:20
  */
@@ -29,7 +35,7 @@ public interface Cache {
    * @param <T> 返回类型
    * @return
    */
-  <T> T rawGet(String key);
+  <T> T rawGet(String key) throws NotSupportOperationException;
 
   /**
    * 查找缓存，其中命名空间将采用class对象的限定包名（全名）
