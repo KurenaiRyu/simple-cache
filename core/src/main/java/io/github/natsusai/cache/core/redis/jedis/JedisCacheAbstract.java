@@ -1,4 +1,4 @@
-package com.iotlead.cache.core.redis.jedis;
+package io.github.natsusai.cache.core.redis.jedis;
 
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;

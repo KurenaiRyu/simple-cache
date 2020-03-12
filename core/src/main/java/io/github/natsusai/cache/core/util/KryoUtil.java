@@ -1,4 +1,4 @@
-package com.iotlead.cache.core.util;
+package io.github.natsusai.cache.core.util;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;

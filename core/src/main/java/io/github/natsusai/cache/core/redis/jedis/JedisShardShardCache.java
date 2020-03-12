@@ -1,16 +1,16 @@
-package com.iotlead.cache.core.redis.jedis;
+package io.github.natsusai.cache.core.redis.jedis;
 
-import com.iotlead.cache.core.Cache;
-import com.iotlead.cache.core.util.KryoUtil;
+import io.github.natsusai.cache.core.Cache;
+import io.github.natsusai.cache.core.exception.NotSupportOperationException;
+import io.github.natsusai.cache.core.util.KryoUtil;
 import lombok.Getter;
-import redis.clients.jedis.BinaryJedis;
-import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisShardInfo;
+import redis.clients.jedis.ShardedJedisPool;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Jedis Cache
@@ -20,24 +20,25 @@ import java.util.stream.Collectors;
  */
 
 @Getter
-public class JedisCache extends JedisCacheAbstract implements Cache {
+public class JedisShardShardCache extends JedisShardCacheAbstract implements Cache {
 
   //TODO: 自动装载配置
 
-  public JedisCache(String prefix, JedisPool pool) {
+
+  public JedisShardShardCache(String prefix, ShardedJedisPool pool) {
     super(prefix, pool);
   }
 
-  public JedisCache(String prefix, String host, int port) {
-    super(prefix, host, port);
+  public JedisShardShardCache(String prefix, List<JedisShardInfo> shardInfos) {
+    super(prefix, shardInfos);
   }
 
-  public JedisCache(String prefix, String host, int port, String password) {
-    super(prefix, host, port, password);
+  public JedisShardShardCache(String prefix, List<String> hosts, List<Integer> ports) {
+    super(prefix, hosts, ports);
   }
 
-  public JedisCache(String prefix, String host, int port, String password, int database) {
-    super(prefix, host, port, password, database);
+  public JedisShardShardCache(String prefix, List<String> hosts, List<Integer> ports, List<String> passwords) {
+    super(prefix, hosts, ports, passwords);
   }
 
   @Override
@@ -53,13 +54,9 @@ public class JedisCache extends JedisCacheAbstract implements Cache {
   @Override
   @SuppressWarnings("unchecked")
   public <T> List<T> multiGet(Collection<String> keys, String namespace) {
-    return get(jedis -> {
-      List<byte[]> result = jedis.mget(keys.stream()
-                                           .map(key -> buildCacheKeyBytes(key, namespace))
-                                           .collect(Collectors.toList())
-                                           .toArray(new byte[0][0]));
-      return (List<T>) result.stream().map(KryoUtil::readFromByteArray).collect(Collectors.toList());
-    });
+    List<T> result = new ArrayList<>();
+    keys.forEach(key -> result.add(get(key, namespace)));
+    return result;
   }
 
   @Override
@@ -84,26 +81,12 @@ public class JedisCache extends JedisCacheAbstract implements Cache {
 
   @Override
   public <T> void multiSet(Map<String, T> keyValueMap) {
-    execute(jedis -> {
-      List<byte[]> params = new ArrayList<>();
-      keyValueMap.forEach((key, value) -> {
-        params.add(buildCacheKeyBytes(key, value.getClass().getName()));
-        params.add(KryoUtil.writeToByteArray(value));
-      });
-      jedis.mset(params.toArray(new byte[0][0]));
-    });
+    keyValueMap.forEach(this::set);
   }
 
   @Override
   public <T> void multiSet(String namespace, Map<String, T> keyValueMap) {
-    execute(jedis -> {
-      List<byte[]> params = new ArrayList<>();
-      keyValueMap.forEach((key, value) -> {
-        params.add(buildCacheKeyBytes(key, namespace));
-        params.add(KryoUtil.writeToByteArray(value));
-      });
-      jedis.mset(params.toArray(new byte[0][0]));
-    });
+    keyValueMap.forEach((k, v) -> set(k, namespace, v));
   }
 
   @Override
@@ -132,26 +115,13 @@ public class JedisCache extends JedisCacheAbstract implements Cache {
 
   @Override
   public <T> Boolean multiSetIfAbsent(Map<String, T> keyValueMap) {
-    return get(jedis -> {
-      List<byte[]> params = new ArrayList<>();
-      keyValueMap.forEach((key, value) -> {
-        params.add(buildCacheKeyBytes(key, value.getClass().getName()));
-        params.add(KryoUtil.writeToByteArray(value));
-      });
-      return jedis.msetnx(params.toArray(new byte[0][0])) > 0;
-    });
+    keyValueMap.forEach(this::setIfAbsent);
+    return true;
   }
 
   @Override
   public <T> Boolean multiSetIfAbsent(String namespace, Map<String, T> keyValueMap) {
-    return get(jedis -> {
-      List<byte[]> params = new ArrayList<>();
-      keyValueMap.forEach((key, value) -> {
-        params.add(buildCacheKeyBytes(key, namespace));
-        params.add(KryoUtil.writeToByteArray(value));
-      });
-      return jedis.msetnx(params.toArray(new byte[0][0])) > 0;
-    });
+    throw new NotSupportOperationException();
   }
 
   @Override
@@ -166,21 +136,7 @@ public class JedisCache extends JedisCacheAbstract implements Cache {
 
   @Override
   public Boolean multiRemove(List<String> keys, List<String> namespaces) {
-    return get(jedis -> {
-      List<byte[]> delKeys = new ArrayList<>();
-      if (keys.size() == 1) {
-        String key = keys.get(0);
-        namespaces.forEach(n -> delKeys.add(buildCacheKeyBytes(key, n)));
-      } else if (namespaces.size() == 1) {
-        String namespace = namespaces.get(0);
-        keys.forEach(k -> delKeys.add(buildCacheKeyBytes(k, namespace)));
-      } else {
-        for (int i = 0; i < Math.min(keys.size(), namespaces.size()); i++) {
-          delKeys.add(buildCacheKeyBytes(keys.get(i), namespaces.get(i)));
-        }
-      }
-      return jedis.del(delKeys.toArray(new byte[0][0])) > 0;
-    });
+    throw new NotSupportOperationException();
   }
 
   @Override
@@ -195,8 +151,7 @@ public class JedisCache extends JedisCacheAbstract implements Cache {
 
   @Override
   public Boolean clear() {
-    execute(BinaryJedis::flushDB);
-    return true;
+    throw new NotSupportOperationException();
   }
 
   @Override

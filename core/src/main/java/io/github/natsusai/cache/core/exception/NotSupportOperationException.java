@@ -1,4 +1,4 @@
-package com.iotlead.cache.core.exception;
+package io.github.natsusai.cache.core.exception;
 
 /**
  * 不支持操作异常

@@ -1,8 +1,8 @@
-package com.iotlead.cache.core.redis;
+package io.github.natsusai.cache.core.redis;
 
-import com.iotlead.cache.core.Cache;
-import com.iotlead.cache.core.redis.jedis.JedisCache;
-import com.iotlead.cache.core.util.KryoUtil;
+import io.github.natsusai.cache.core.Cache;
+import io.github.natsusai.cache.core.redis.jedis.JedisCache;
+import io.github.natsusai.cache.core.util.KryoUtil;
 import lombok.Data;
 import org.junit.BeforeClass;
 import org.junit.Test;
