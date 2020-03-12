@@ -6,12 +6,13 @@ import io.github.natsusai.cache.core.util.KryoUtil;
 import lombok.Data;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import redis.clients.jedis.Jedis;
 
 import static org.junit.Assert.assertEquals;
 
 public class RedisShardCacheTest {
 
-  private static Cache cache;
+  private static Cache<Jedis> cache;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -44,7 +45,7 @@ public class RedisShardCacheTest {
   }
 
   @Data
-  static class User {
+  class User {
     private String name;
     private int age;
   }
