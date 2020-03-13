@@ -63,6 +63,7 @@ public class KryoUtil {
      * @return 序列化后的字节数组
      */
     public static <T> byte[] writeToByteArray(T obj) {
+        if (obj == null) return null;
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         Output output = new Output(byteArrayOutputStream);
  
@@ -83,6 +84,7 @@ public class KryoUtil {
      */
     public static <T> String writeToString(T obj) {
         try {
+            if (obj == null) return null;
             return new String(Base64.encodeBase64(writeToByteArray(obj)), DEFAULT_ENCODING);
         } catch (UnsupportedEncodingException e) {
             throw new IllegalStateException(e);
@@ -98,6 +100,7 @@ public class KryoUtil {
      */
     @SuppressWarnings("unchecked")
     public static <T> T readFromByteArray(byte[] byteArray) {
+        if (byteArray == null) return null;
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArray);
         Input input = new Input(byteArrayInputStream);
  
@@ -115,6 +118,7 @@ public class KryoUtil {
      */
     public static <T> T readFromString(String str) {
         try {
+            if (str == null) return null;
             return readFromByteArray(Base64.decodeBase64(str.getBytes(DEFAULT_ENCODING)));
         } catch (UnsupportedEncodingException e) {
             throw new IllegalStateException(e);
@@ -134,6 +138,7 @@ public class KryoUtil {
      * @return 序列化后的字节数组
      */
     public static <T> byte[] writeObjectToByteArray(T obj) {
+        if (obj == null) return null;
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         Output output = new Output(byteArrayOutputStream);
  
@@ -154,6 +159,7 @@ public class KryoUtil {
      */
     public static <T> String writeObjectToString(T obj) {
         try {
+            if (obj == null) return null;
             return new String(Base64.encodeBase64(writeObjectToByteArray(obj)), DEFAULT_ENCODING);
         } catch (UnsupportedEncodingException e) {
             throw new IllegalStateException(e);
@@ -169,6 +175,7 @@ public class KryoUtil {
      * @return 原对象
      */
     public static <T> T readObjectFromByteArray(byte[] byteArray, Class<T> clazz) {
+        if (byteArray == null) return null;
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArray);
         Input input = new Input(byteArrayInputStream);
  
@@ -187,6 +194,7 @@ public class KryoUtil {
      */
     public static <T> T readObjectFromString(String str, Class<T> clazz) {
         try {
+            if (str == null) return null;
             return readObjectFromByteArray(Base64.decodeBase64(str.getBytes(DEFAULT_ENCODING)), clazz);
         } catch (UnsupportedEncodingException e) {
             throw new IllegalStateException(e);
