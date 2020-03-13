@@ -186,7 +186,7 @@ public class JedisCache extends JedisCacheAbstract implements Cache<Jedis> {
 
   @Override
   public Boolean clear(String namespace) {
-    return get(jedis -> jedis.del(buildDeleteCacheKeyPattern(namespace).getBytes()) > 0);
+    return get(jedis -> jedis.del(buildNamespacePatternKey(namespace).getBytes()) > 0);
   }
 
   @Override

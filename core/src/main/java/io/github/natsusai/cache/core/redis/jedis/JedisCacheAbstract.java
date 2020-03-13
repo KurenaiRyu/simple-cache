@@ -94,11 +94,11 @@ public abstract class JedisCacheAbstract {
   }
 
   /**
-   * 生成删除对应命名空间所有缓存的表达式
+   * 生成命名空间所有缓存的表达式（模糊查询）
    * @param namespace 命名空间
    * @return 表达式字符串
    */
-  protected String buildDeleteCacheKeyPattern(String namespace) {
+  protected String buildNamespacePatternKey(String namespace) {
     return Stream.of(PREFIX.toUpperCase(), namespace, "*")
         .filter(StringUtils::isNotBlank).collect(Collectors.joining(CONNECTOR));
   }

@@ -18,13 +18,13 @@ import java.util.stream.Collectors;
  */
 
 @Getter
-public class LettuceCache extends LettuceCacheAbstract<String, byte[]> implements Cache<RedisCommands> {
+public class LettuceCache extends LettuceCacheAbstract<String, byte[]> implements Cache<RedisCommands<String, byte[]>> {
 
-  public LettuceCache(String prefix, StatefulRedisConnection connection) {
+  public LettuceCache(String prefix, StatefulRedisConnection<String, byte[]> connection) {
     super(prefix, connection);
   }
 
-  public LettuceCache(String prefix, RedisCommands commands) {
+  public LettuceCache(String prefix, RedisCommands<String, byte[]> commands) {
     super(prefix, commands);
   }
 
@@ -152,7 +152,7 @@ public class LettuceCache extends LettuceCacheAbstract<String, byte[]> implement
 
   @Override
   public Boolean clear(String namespace) {
-    return commands.del(buildDeleteCacheKeyPattern(namespace)) > 0;
+    return commands.del(buildNamespacePatternKey(namespace)) > 0;
   }
 
   @Override
@@ -162,7 +162,7 @@ public class LettuceCache extends LettuceCacheAbstract<String, byte[]> implement
   }
 
   @Override
-  public RedisCommands getClient() {
+  public RedisCommands<String, byte[]> getClient() {
     return commands;
   }
 

@@ -153,7 +153,7 @@ public class ShardedJedisCache extends ShardedJedisCacheAbstract implements Cach
 
   @Override
   public Boolean clear(String namespace) {
-    return get(jedis -> jedis.del(buildDeleteCacheKeyPattern(namespace).getBytes()) > 0);
+    return get(jedis -> jedis.del(buildNamespacePatternKey(namespace).getBytes()) > 0);
   }
 
   @Override
