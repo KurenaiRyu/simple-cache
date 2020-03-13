@@ -6,10 +6,23 @@
     <groupId>io.github.natsusai</groupId>
     <artifactId>simple-cache-parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.0.1-RELEASE</version>
+    <version>0.0.2-SNAPSHOT</version>
     <modules>
         <module>core</module>
     </modules>
+
+    <distributionManagement>
+        <repository>
+            <id>maven-releases</id>
+            <name>Nexus Release Repository</name>
+            <url>http://192.168.8.11:3081/repository/maven-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>maven-snapshots</id>
+            <name>Nexus Snapshot Repository</name>
+            <url>http://192.168.8.11:3081/repository/maven-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
