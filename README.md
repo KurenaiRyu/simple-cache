@@ -10,6 +10,20 @@
 - 其中只要有一个为空时则会忽略，并不会出现类似`prefix::key`的情况
 - 默认不会有超时时间
 - 带有raw前缀的方法为不做键值和类名拼接处理（即直接调用底层实现）
+- 序列化使用Kryo，以byte数组储存
+
+### 使用
+用一下实现的构造方法进行构造一个对象，用Cache接口进行接收，之后调用对象的相应方法进行管理缓存即可
+- Stand-alone(单机)  
+JedisCache、ShardedJedisCache、
+- Cluster(集群)  
+LettuceCache、LettuceClusterCache
+
+e.g.
+```java
+Cache cache = new LettuceCache("prefix-string", "localhost", 6379);
+User user = cache.get(someKey, User.class);
+```
 
 ### TODO
 - [ ] 实现RedisLock  
