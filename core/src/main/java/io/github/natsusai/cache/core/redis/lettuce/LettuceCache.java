@@ -2,8 +2,9 @@ package io.github.natsusai.cache.core.redis.lettuce;
 
 import io.github.natsusai.cache.core.Cache;
 import io.lettuce.core.KeyValue;
-import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.sync.RedisCommands;
+import io.lettuce.core.codec.RedisCodec;
 import lombok.Getter;
 
 import java.util.*;
@@ -19,20 +20,8 @@ import java.util.stream.Collectors;
 @Getter
 public class LettuceCache extends LettuceCacheAbstract<String, Object> implements Cache<RedisCommands<String, Object>> {
 
-  public LettuceCache(String prefix, StatefulRedisConnection<String, Object> connection) {
-    super(prefix, connection);
-  }
-
-  public LettuceCache(String prefix, RedisCommands<String, Object> commands) {
-    super(prefix, commands);
-  }
-
-  public LettuceCache(String prefix, RedisCommands<String, Object> commands, String password) {
-    super(prefix, commands, password);
-  }
-
-  public LettuceCache(String prefix, RedisCommands<String, Object> commands, String password, int database) {
-    super(prefix, commands, password, database);
+  public LettuceCache(String prefix, RedisClient redisClient) {
+    super(prefix, redisClient);
   }
 
   public LettuceCache(String prefix, String host, int port) {
@@ -45,6 +34,10 @@ public class LettuceCache extends LettuceCacheAbstract<String, Object> implement
 
   public LettuceCache(String prefix, String host, int port, String password, int database) {
     super(prefix, host, port, password, database);
+  }
+
+  public LettuceCache(String prefix, String host, int port, String password, int database, RedisCodec<String, Object> redisCodec) {
+    super(prefix, host, port, password, database, redisCodec);
   }
 
   @Override

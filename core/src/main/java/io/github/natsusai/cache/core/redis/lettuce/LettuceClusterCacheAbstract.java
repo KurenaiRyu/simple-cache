@@ -35,21 +35,11 @@ public abstract class LettuceClusterCacheAbstract<K, V> {
   protected final String PREFIX;
   protected final String CONNECTOR = ":";
 
-  public LettuceClusterCacheAbstract(String prefix, StatefulRedisClusterConnection<K, V> connection) {
+  public LettuceClusterCacheAbstract(String prefix, RedisClusterClient redisClusterClient) {
     this.PREFIX = prefix == null ? "" : prefix;
-    this.connection = connection;
-    this.commands = connection.sync();
-  }
-
-  public LettuceClusterCacheAbstract(String prefix, RedisClusterCommands<K, V> commands) {
-    this.PREFIX = prefix == null ? "" : prefix;
-    this.commands = commands;
-  }
-
-  public LettuceClusterCacheAbstract(String prefix, RedisClusterCommands<K, V> commands, String password) {
-    this.PREFIX = prefix == null ? "" : prefix;
-    commands.auth(password);
-    this.commands = commands;
+    this.redisClusterClient = redisClusterClient;
+    this.connection = this.redisClusterClient.connect(new KryoCodec<>());
+    this.commands = this.connection.sync();
   }
 
   @SuppressWarnings("unchecked")

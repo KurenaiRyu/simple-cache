@@ -3,7 +3,7 @@ package io.github.natsusai.cache.core.redis.lettuce;
 import io.github.natsusai.cache.core.Cache;
 import io.lettuce.core.KeyValue;
 import io.lettuce.core.RedisURI;
-import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
+import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.cluster.api.sync.RedisClusterCommands;
 import lombok.Getter;
 
@@ -20,16 +20,8 @@ import java.util.stream.Collectors;
 @Getter
 public class LettuceClusterCache extends LettuceClusterCacheAbstract<String, Object> implements Cache<RedisClusterCommands<String, Object>> {
 
-  public LettuceClusterCache(String prefix, StatefulRedisClusterConnection<String, Object> connection) {
-    super(prefix, connection);
-  }
-
-  public LettuceClusterCache(String prefix, RedisClusterCommands<String, Object> commands) {
-    super(prefix, commands);
-  }
-
-  public LettuceClusterCache(String prefix, RedisClusterCommands<String, Object> commands, String password) {
-    super(prefix, commands, password);
+  public LettuceClusterCache(String prefix, RedisClusterClient redisClusterClient) {
+    super(prefix, redisClusterClient);
   }
 
   public LettuceClusterCache(String prefix, String host, int port) {
