@@ -4,37 +4,45 @@ import io.github.natsusai.cache.core.util.KryoUtil;
 import io.lettuce.core.codec.RedisCodec;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 
 /**
  * @author liufuhong
  * @since 2020-03-13 10:15
  */
 
-public class KryoCodec implements RedisCodec<String, Object> {
-
-  private Charset charset = StandardCharsets.UTF_8;
+public class KryoCodec<K, V> implements RedisCodec<K, V> {
 
   @Override
-  public String decodeKey(ByteBuffer bytes) {
-    return charset.decode(bytes).toString();
+  public K decodeKey(ByteBuffer bytes) {
+    return decode(bytes);
   }
 
   @Override
-  public Object decodeValue(ByteBuffer bytes) {
-    byte[] byteArray = new byte[bytes.remaining()];
-    bytes.get(byteArray);
-    return KryoUtil.readFromByteArray(byteArray);
+  public V decodeValue(ByteBuffer bytes) {
+    return decode(bytes);
   }
 
   @Override
-  public ByteBuffer encodeKey(String key) {
-    return charset.encode(key);
+  public ByteBuffer encodeKey(K key) {
+    return encode(key);
   }
 
   @Override
-  public ByteBuffer encodeValue(Object value) {
-    return ByteBuffer.wrap(KryoUtil.writeToByteArray(value));
+  public ByteBuffer encodeValue(V value) {
+    return encode(value);
+  }
+
+  private <T> T decode(ByteBuffer bytes) {
+    return KryoUtil.readFromByteArray(byteBuffer2ByteArray(bytes));
+  }
+
+  private <T> ByteBuffer encode(T obj) {
+    return ByteBuffer.wrap(KryoUtil.writeToByteArray(obj));
+  }
+
+  private byte[] byteBuffer2ByteArray(ByteBuffer byteBuffer) {
+    byte[] byteArray = new byte[byteBuffer.remaining()];
+    byteBuffer.get(byteArray);
+    return byteArray;
   }
 }

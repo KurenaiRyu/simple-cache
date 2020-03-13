@@ -4,6 +4,7 @@ import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
+import io.lettuce.core.codec.RedisCodec;
 import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 
@@ -91,6 +92,19 @@ public abstract class LettuceCacheAbstract<K, V> {
                                          .withDatabase(database)
                                          .build());
     this.connection = (StatefulRedisConnection<K, V>) this.redisClient.connect(new KryoCodec());
+    this.commands = this.connection.sync();
+  }
+
+  @SuppressWarnings("unchecked")
+  public LettuceCacheAbstract(String prefix, String host, int port, String password, int database, RedisCodec<K, V> redisCodec) {
+    this.PREFIX = prefix == null ? "" : prefix;
+    this.redisClient = RedisClient.create(RedisURI.builder()
+                                         .withHost(host)
+                                         .withPort(port)
+                                         .withPassword(password)
+                                         .withDatabase(database)
+                                         .build());
+    this.connection = this.redisClient.connect(redisCodec);
     this.commands = this.connection.sync();
   }
 
