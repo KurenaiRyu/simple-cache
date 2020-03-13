@@ -23,9 +23,6 @@ import java.util.Map;
 @Getter
 public class ShardedJedisCache extends ShardedJedisCacheAbstract implements Cache<ShardedJedis> {
 
-  //TODO: 自动装载配置
-
-
   public ShardedJedisCache(String prefix, ShardedJedisPool pool) {
     super(prefix, pool);
   }

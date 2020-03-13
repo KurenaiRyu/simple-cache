@@ -21,7 +21,9 @@ import java.util.stream.Stream;
 @Getter
 public abstract class LettuceCacheAbstract<K, V> {
 
-  protected final RedisCommands<K, V> commands;
+  protected final RedisCommands<K, V>           commands;
+  protected       RedisClient                   redisClient;
+  protected       StatefulRedisConnection<K, V> connection;
 
   /**
    * 缓存前缀
@@ -34,6 +36,7 @@ public abstract class LettuceCacheAbstract<K, V> {
 
   public LettuceCacheAbstract(String prefix, StatefulRedisConnection<K, V> connection) {
     this.PREFIX = prefix == null ? "" : prefix;
+    this.connection = connection;
     this.commands = connection.sync();
   }
 
@@ -58,34 +61,37 @@ public abstract class LettuceCacheAbstract<K, V> {
   @SuppressWarnings("unchecked")
   public LettuceCacheAbstract(String prefix, String host, int port) {
     this.PREFIX = prefix == null ? "" : prefix;
-    this.commands = (RedisCommands<K, V>) RedisClient.create(RedisURI.builder()
-                                                                 .withHost(host)
-                                                                 .withPort(port)
-                                                                 .build())
-        .connect(new KryoCodec()).sync();
+    this.redisClient = RedisClient.create(RedisURI.builder()
+                           .withHost(host)
+                           .withPort(port)
+                           .build());
+    this.connection = (StatefulRedisConnection<K, V>) this.redisClient.connect(new KryoCodec());
+    this.commands = this.connection.sync();
   }
 
   @SuppressWarnings("unchecked")
   public LettuceCacheAbstract(String prefix, String host, int port, String password) {
     this.PREFIX = prefix == null ? "" : prefix;
-    this.commands = (RedisCommands<K, V>) RedisClient.create(RedisURI.builder()
-                                                                 .withHost(host)
-                                                                 .withPort(port)
-                                                                 .withPassword(password)
-                                                                 .build())
-        .connect(new KryoCodec()).sync();
+    this.redisClient = RedisClient.create(RedisURI.builder()
+                                         .withHost(host)
+                                         .withPort(port)
+                                         .withPassword(password)
+                                         .build());
+    this.connection = (StatefulRedisConnection<K, V>) this.redisClient.connect(new KryoCodec());
+    this.commands = this.connection.sync();
   }
 
   @SuppressWarnings("unchecked")
   public LettuceCacheAbstract(String prefix, String host, int port, String password, int database) {
     this.PREFIX = prefix == null ? "" : prefix;
-    this.commands = (RedisCommands<K, V>) RedisClient.create(RedisURI.builder()
-                                                                 .withHost(host)
-                                                                 .withPort(port)
-                                                                 .withPassword(password)
-                                                                 .withDatabase(database)
-                                                                 .build())
-        .connect(new KryoCodec()).sync();
+    this.redisClient = RedisClient.create(RedisURI.builder()
+                                         .withHost(host)
+                                         .withPort(port)
+                                         .withPassword(password)
+                                         .withDatabase(database)
+                                         .build());
+    this.connection = (StatefulRedisConnection<K, V>) this.redisClient.connect(new KryoCodec());
+    this.commands = this.connection.sync();
   }
 
   /**

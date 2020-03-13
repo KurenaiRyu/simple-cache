@@ -23,8 +23,6 @@ import java.util.stream.Collectors;
 @Getter
 public class JedisCache extends JedisCacheAbstract implements Cache<Jedis> {
 
-  //TODO : 测试bytes key 批量模糊删除（namespace）
-
   public JedisCache(String prefix, JedisPool pool) {
     super(prefix, pool);
   }

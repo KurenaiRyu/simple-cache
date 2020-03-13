@@ -2,8 +2,9 @@ package io.github.natsusai.cache.core.redis.lettuce;
 
 import io.github.natsusai.cache.core.Cache;
 import io.lettuce.core.KeyValue;
-import io.lettuce.core.api.StatefulRedisConnection;
-import io.lettuce.core.api.sync.RedisCommands;
+import io.lettuce.core.RedisURI;
+import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
+import io.lettuce.core.cluster.api.sync.RedisClusterCommands;
 import lombok.Getter;
 
 import java.util.*;
@@ -17,34 +18,26 @@ import java.util.stream.Collectors;
  */
 
 @Getter
-public class LettuceCache extends LettuceCacheAbstract<String, Object> implements Cache<RedisCommands<String, Object>> {
+public class LettuceClusterCache extends LettuceClusterCacheAbstract<String, Object> implements Cache<RedisClusterCommands<String, Object>> {
 
-  public LettuceCache(String prefix, StatefulRedisConnection<String, Object> connection) {
+  public LettuceClusterCache(String prefix, StatefulRedisClusterConnection<String, Object> connection) {
     super(prefix, connection);
   }
 
-  public LettuceCache(String prefix, RedisCommands<String, Object> commands) {
+  public LettuceClusterCache(String prefix, RedisClusterCommands<String, Object> commands) {
     super(prefix, commands);
   }
 
-  public LettuceCache(String prefix, RedisCommands<String, Object> commands, String password) {
+  public LettuceClusterCache(String prefix, RedisClusterCommands<String, Object> commands, String password) {
     super(prefix, commands, password);
   }
 
-  public LettuceCache(String prefix, RedisCommands<String, Object> commands, String password, int database) {
-    super(prefix, commands, password, database);
-  }
-
-  public LettuceCache(String prefix, String host, int port) {
+  public LettuceClusterCache(String prefix, String host, int port) {
     super(prefix, host, port);
   }
 
-  public LettuceCache(String prefix, String host, int port, String password) {
-    super(prefix, host, port, password);
-  }
-
-  public LettuceCache(String prefix, String host, int port, String password, int database) {
-    super(prefix, host, port, password, database);
+  public LettuceClusterCache(String prefix, List<RedisURI> redisURIs) {
+    super(prefix, redisURIs);
   }
 
   @Override
@@ -183,7 +176,7 @@ public class LettuceCache extends LettuceCacheAbstract<String, Object> implement
   }
 
   @Override
-  public RedisCommands<String, Object> getClient() {
+  public RedisClusterCommands<String, Object> getClient() {
     return commands;
   }
 }
