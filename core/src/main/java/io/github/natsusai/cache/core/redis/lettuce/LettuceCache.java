@@ -1,7 +1,6 @@
 package io.github.natsusai.cache.core.redis.lettuce;
 
 import io.github.natsusai.cache.core.Cache;
-import io.github.natsusai.cache.core.util.KryoUtil;
 import io.lettuce.core.KeyValue;
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.sync.RedisCommands;
@@ -18,115 +17,137 @@ import java.util.stream.Collectors;
  */
 
 @Getter
-public class LettuceCache extends LettuceCacheAbstract<String, byte[]> implements Cache<RedisCommands<String, byte[]>> {
+public class LettuceCache extends LettuceCacheAbstract<String, Object> implements Cache<RedisCommands<String, Object>> {
 
-  public LettuceCache(String prefix, StatefulRedisConnection<String, byte[]> connection) {
+  public LettuceCache(String prefix, StatefulRedisConnection<String, Object> connection) {
     super(prefix, connection);
   }
 
-  public LettuceCache(String prefix, RedisCommands<String, byte[]> commands) {
+  public LettuceCache(String prefix, RedisCommands<String, Object> commands) {
     super(prefix, commands);
   }
 
-  @Override
-  public <T> T rawGet(String key) {
-    return KryoUtil.readFromByteArray(commands.get(key));
+  public LettuceCache(String prefix, RedisCommands<String, Object> commands, String password) {
+    super(prefix, commands, password);
+  }
+
+  public LettuceCache(String prefix, RedisCommands<String, Object> commands, String password, int database) {
+    super(prefix, commands, password, database);
+  }
+
+  public LettuceCache(String prefix, String host, int port) {
+    super(prefix, host, port);
+  }
+
+  public LettuceCache(String prefix, String host, int port, String password) {
+    super(prefix, host, port, password);
+  }
+
+  public LettuceCache(String prefix, String host, int port, String password, int database) {
+    super(prefix, host, port, password, database);
   }
 
   @Override
-  public <T> T get(String key, String namespace) {
-    return KryoUtil.readFromByteArray(commands.get(buildCacheKey(key, namespace)));
+  @SuppressWarnings("unchecked")
+  public <T> T rawGet(String key) {
+    return (T) commands.get(key);
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public <T> T  get(String key, String namespace) {
+    return (T) commands.get(buildCacheKey(key, namespace));
   }
 
   @Override
   @SuppressWarnings("unchecked")
   public <T> List<T> multiGet(Collection<String> keys, String namespace) {
-    List<KeyValue<String, byte[]>> keyValues = commands.mget(keys.stream()
+    List<KeyValue<String, Object>> keyValues = commands.mget(keys.stream()
                                                             .map(key -> buildCacheKey(key, namespace))
                                                             .toArray(String[]::new));
-    return (List<T>) keyValues.stream().map(KeyValue::getValue).map(KryoUtil::readFromByteArray).collect(Collectors.toList());
+    return (List<T>) keyValues.stream().map(KeyValue::getValue).collect(Collectors.toList());
   }
 
   @Override
   public <T> void rawSet(String key, T cache) {
-    commands.set(key, KryoUtil.writeToByteArray(cache));
+    commands.set(key, cache);
   }
 
   @Override
   public <T> void rawSet(String key, long ttl, T cache) {
-    commands.psetex(key, ttl, KryoUtil.writeToByteArray(cache));
+    commands.psetex(key, ttl, cache);
   }
 
   @Override
   public <T> void set(String key, String namespace, T cache) {
-    commands.set(buildCacheKey(key, namespace), KryoUtil.writeToByteArray(cache));
+    commands.set(buildCacheKey(key, namespace), cache);
   }
 
   @Override
   public <T> void set(String key, String namespace, long ttl, T cache) {
-    commands.psetex(buildCacheKey(key, namespace), ttl, KryoUtil.writeToByteArray(cache));
+    commands.psetex(buildCacheKey(key, namespace), ttl, cache);
   }
 
   @Override
   public <T> void multiSet(Map<String, T> keyValueMap) {
-    Map<String, byte[]> params = new HashMap<>();
-    keyValueMap.forEach((k, v) -> params.put(buildCacheKey(k, v.getClass().getName()), KryoUtil.writeToByteArray(v)));
+    Map<String, Object> params = new HashMap<>();
+    keyValueMap.forEach((k, v) -> params.put(buildCacheKey(k, v.getClass().getName()), v));
     commands.mset(params);
   }
 
   @Override
   public <T> void multiSet(String namespace, Map<String, T> keyValueMap) {
-    Map<String, byte[]> params = new HashMap<>();
-    keyValueMap.forEach((k, v) -> params.put(buildCacheKey(k, namespace), KryoUtil.writeToByteArray(v)));
+    Map<String, Object> params = new HashMap<>();
+    keyValueMap.forEach((k, v) -> params.put(buildCacheKey(k, namespace), v));
     commands.mset(params);
   }
 
   @Override
   public <T> Boolean rawSetIfAbsent(String key, T cache) {
-    return commands.setnx(key, KryoUtil.writeToByteArray(cache));
+    return commands.setnx(key, cache);
   }
 
   @Override
   public <T> Boolean rawSetIfAbsent(String key, long ttl, T cache) {
-    commands.setnx(key, KryoUtil.writeToByteArray(cache));
+    commands.setnx(key, cache);
     return commands.pexpire(key, ttl);
   }
 
   @Override
   public <T> Boolean setIfAbsent(String key, String namespace, T cache) {
-    return commands.setnx(buildCacheKey(key, namespace), KryoUtil.writeToByteArray(cache));
+    return commands.setnx(buildCacheKey(key, namespace), cache);
   }
 
   @Override
   public <T> Boolean setIfAbsent(String key, String namespace, long ttl, T cache) {
     String buildKey = buildCacheKey(key, namespace);
-    boolean result = commands.setnx(buildKey, KryoUtil.writeToByteArray(cache));
+    boolean result = commands.setnx(buildKey, cache);
     commands.pexpire(buildKey, ttl);
     return result;
   }
 
   @Override
   public <T> Boolean multiSetIfAbsent(Map<String, T> keyValueMap) {
-    Map<String, byte[]> params = new HashMap<>();
-    keyValueMap.forEach((k ,v) -> params.put(buildCacheKey(k, v.getClass().getName()), KryoUtil.writeToByteArray(v)));
+    Map<String, Object> params = new HashMap<>();
+    keyValueMap.forEach((k ,v) -> params.put(buildCacheKey(k, v.getClass().getName()), v));
     return commands.msetnx(params);
   }
 
   @Override
   public <T> Boolean multiSetIfAbsent(String namespace, Map<String, T> keyValueMap) {
-    Map<String, byte[]> params = new HashMap<>();
-    keyValueMap.forEach((k ,v) -> params.put(buildCacheKey(k, namespace), KryoUtil.writeToByteArray(v)));
+    Map<String, Object> params = new HashMap<>();
+    keyValueMap.forEach((k ,v) -> params.put(buildCacheKey(k, namespace), v));
     return commands.msetnx(params);
   }
 
   @Override
   public <T> Boolean multiSetIfAbsent(String namespace, long ttl, Map<String, T> keyValueMap) {
-    Map<String, byte[]> params = new HashMap<>();
+    Map<String, Object> params = new HashMap<>();
     List<String> buildKeys = new ArrayList<>();
     keyValueMap.forEach((k ,v) -> {
       String buildKey = buildCacheKey(k, namespace);
       buildKeys.add(buildKey);
-      params.put(buildKey, KryoUtil.writeToByteArray(v));
+      params.put(buildKey, v);
     });
     Boolean result = commands.msetnx(params);
     buildKeys.forEach(key -> commands.pexpire(key, ttl));
@@ -162,7 +183,7 @@ public class LettuceCache extends LettuceCacheAbstract<String, byte[]> implement
   }
 
   @Override
-  public RedisCommands<String, byte[]> getClient() {
+  public RedisCommands<String, Object> getClient() {
     return commands;
   }
 

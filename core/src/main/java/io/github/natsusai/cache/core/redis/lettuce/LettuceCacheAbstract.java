@@ -62,7 +62,7 @@ public abstract class LettuceCacheAbstract<K, V> {
                                                                  .withHost(host)
                                                                  .withPort(port)
                                                                  .build())
-                                                      .connect().sync();
+        .connect(new KryoCodec()).sync();
   }
 
   @SuppressWarnings("unchecked")
@@ -73,7 +73,7 @@ public abstract class LettuceCacheAbstract<K, V> {
                                                                  .withPort(port)
                                                                  .withPassword(password)
                                                                  .build())
-                                                      .connect().sync();
+        .connect(new KryoCodec()).sync();
   }
 
   @SuppressWarnings("unchecked")
@@ -85,7 +85,7 @@ public abstract class LettuceCacheAbstract<K, V> {
                                                                  .withPassword(password)
                                                                  .withDatabase(database)
                                                                  .build())
-                                                      .connect().sync();
+        .connect(new KryoCodec()).sync();
   }
 
   /**
