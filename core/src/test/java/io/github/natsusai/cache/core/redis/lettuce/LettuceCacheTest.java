@@ -11,12 +11,13 @@ import static org.junit.Assert.assertNull;
 
 public class LettuceCacheTest {
 
-  private static Cache<RedisCommands<String, Object>> cache;
+  private static Cache cache;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     cache = new LettuceCache("test", "192.168.8.210", 6379, "123456");
-    cache.getClient().select(9);
+    RedisCommands<String, Object> client = cache.getClient();
+    client.select(9);
   }
 
   @Test

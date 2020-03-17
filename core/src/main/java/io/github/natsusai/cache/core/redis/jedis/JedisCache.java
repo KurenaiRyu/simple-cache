@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  */
 
 @Getter
-public class JedisCache extends JedisCacheAbstract implements Cache<Jedis> {
+public class JedisCache extends JedisCacheAbstract implements Cache {
 
   public JedisCache(String prefix, JedisPool pool) {
     super(prefix, pool);

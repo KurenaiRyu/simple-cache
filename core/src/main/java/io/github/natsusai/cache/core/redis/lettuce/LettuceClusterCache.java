@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  */
 
 @Getter
-public class LettuceClusterCache extends LettuceClusterCacheAbstract<String, Object> implements Cache<RedisClusterCommands<String, Object>> {
+public class LettuceClusterCache extends LettuceClusterCacheAbstract<String, Object> implements Cache {
 
   public LettuceClusterCache(String prefix, RedisClusterClient redisClusterClient) {
     super(prefix, redisClusterClient);

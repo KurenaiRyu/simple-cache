@@ -22,7 +22,7 @@ import java.util.function.Supplier;
  * @since 2019-08-07 13:20
  */
 
-public interface Cache<C> {
+public interface Cache {
 
   long VOLATILITY_TIME = 10 * 1000L;//短存时间
   //TODO：处理缓存短时间内大面积失效的风险
@@ -425,5 +425,5 @@ public interface Cache<C> {
    * 获取调用客户端实例（不进行包装的客户端）
    * @return 客户端实例
    */
-  C getClient();
+  <T> T getClient();
 }

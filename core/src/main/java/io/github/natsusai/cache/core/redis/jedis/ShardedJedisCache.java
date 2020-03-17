@@ -21,7 +21,7 @@ import java.util.Map;
  */
 
 @Getter
-public class ShardedJedisCache extends ShardedJedisCacheAbstract implements Cache<ShardedJedis> {
+public class ShardedJedisCache extends ShardedJedisCacheAbstract implements Cache {
 
   public ShardedJedisCache(String prefix, ShardedJedisPool pool) {
     super(prefix, pool);
