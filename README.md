@@ -1,4 +1,7 @@
-# Simple Cache
+# Simple Cache  
+![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/NatsuSai/simple-cache?include_prereleases)
+![GitHub](https://img.shields.io/github/license/NatsuSai/simple-cache)
+
 项目提供缓存接口用于统一实现，但实现也不一定会完全支持所有接口，当不支持该操作时则默认抛出[NotSupportOperationException](core/src/main/java/io/github/natsusai/cache/core/exception/NotSupportOperationException.java)，
 需要注意的是这个异常时runtime异常。
 
