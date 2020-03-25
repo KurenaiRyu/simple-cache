@@ -159,6 +159,16 @@ public class ShardedJedisCache extends ShardedJedisCacheAbstract implements Cach
   }
 
   @Override
+  public boolean exists(String key, String namespace) {
+    return get(shardedJedis -> shardedJedis.exists(buildCacheKeyBytes(key, namespace)));
+  }
+
+  @Override
+  public boolean rawExists(String key) {
+    return get(shardedJedis -> shardedJedis.exists(key.getBytes()));
+  }
+
+  @Override
   public ShardedJedis getClient() {
     return pool.getResource();
   }

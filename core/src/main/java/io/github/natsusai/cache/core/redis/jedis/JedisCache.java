@@ -194,6 +194,16 @@ public class JedisCache extends JedisCacheAbstract implements Cache {
   }
 
   @Override
+  public boolean exists(String key, String namespace) {
+    return get(jedis -> jedis.exists(buildCacheKeyBytes(key, namespace)));
+  }
+
+  @Override
+  public boolean rawExists(String key) {
+    return get(jedis -> jedis.exists(key.getBytes()));
+  }
+
+  @Override
   @SuppressWarnings("unchecked")
   public Jedis getClient() {
     return pool.getResource();

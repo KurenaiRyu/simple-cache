@@ -170,6 +170,16 @@ public class LettuceCache extends LettuceCacheAbstract<String, Object> implement
   }
 
   @Override
+  public boolean exists(String key, String namespace) {
+    return commands.exists(buildCacheKey(key, namespace)) > 0;
+  }
+
+  @Override
+  public boolean rawExists(String key) {
+    return commands.exists(key) > 0;
+  }
+
+  @Override
   public Boolean clear() {
     commands.flushdb();
     return true;

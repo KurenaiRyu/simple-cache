@@ -1,6 +1,7 @@
 package io.github.natsusai.cache.core.util;
 
 import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import org.apache.commons.codec.binary.Base64;
@@ -8,6 +9,7 @@ import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 
 /**
@@ -64,14 +66,18 @@ public class KryoUtil {
      */
     public static <T> byte[] writeToByteArray(T obj) {
         if (obj == null) return null;
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        Output output = new Output(byteArrayOutputStream);
- 
-        Kryo kryo = getInstance();
-        kryo.writeClassAndObject(output, obj);
-        output.flush();
- 
-        return byteArrayOutputStream.toByteArray();
+        try(
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            Output output = new Output(byteArrayOutputStream)
+        ) {
+
+            Kryo kryo = getInstance();
+            kryo.writeClassAndObject(output, obj);
+            output.flush();
+            return byteArrayOutputStream.toByteArray();
+        } catch (IOException e) {
+            throw new KryoException(e.getMessage(), e.getCause());
+        }
     }
  
     /**
@@ -101,11 +107,15 @@ public class KryoUtil {
     @SuppressWarnings("unchecked")
     public static <T> T readFromByteArray(byte[] byteArray) {
         if (byteArray == null) return null;
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArray);
-        Input input = new Input(byteArrayInputStream);
- 
-        Kryo kryo = getInstance();
-        return (T) kryo.readClassAndObject(input);
+        try(
+            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArray);
+            Input input = new Input(byteArrayInputStream);
+        ) {
+            Kryo kryo = getInstance();
+            return (T) kryo.readClassAndObject(input);
+        } catch (IOException e) {
+            throw new KryoException(e.getMessage(), e.getCause());
+        }
     }
  
     /**
@@ -139,14 +149,19 @@ public class KryoUtil {
      */
     public static <T> byte[] writeObjectToByteArray(T obj) {
         if (obj == null) return null;
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        Output output = new Output(byteArrayOutputStream);
- 
-        Kryo kryo = getInstance();
-        kryo.writeObject(output, obj);
-        output.flush();
- 
-        return byteArrayOutputStream.toByteArray();
+        try(
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            Output output = new Output(byteArrayOutputStream);
+        ) {
+
+            Kryo kryo = getInstance();
+            kryo.writeObject(output, obj);
+            output.flush();
+
+            return byteArrayOutputStream.toByteArray();
+        } catch (IOException e) {
+            throw new KryoException(e.getMessage(), e.getCause());
+        }
     }
  
     /**
@@ -176,11 +191,16 @@ public class KryoUtil {
      */
     public static <T> T readObjectFromByteArray(byte[] byteArray, Class<T> clazz) {
         if (byteArray == null) return null;
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArray);
-        Input input = new Input(byteArrayInputStream);
- 
-        Kryo kryo = getInstance();
-        return kryo.readObject(input, clazz);
+        try(
+            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(byteArray);
+            Input input = new Input(byteArrayInputStream);
+        ) {
+            Kryo kryo = getInstance();
+            return kryo.readObject(input, clazz);
+        } catch (IOException e) {
+            throw new KryoException(e.getMessage(), e.getCause());
+        }
+
     }
  
     /**

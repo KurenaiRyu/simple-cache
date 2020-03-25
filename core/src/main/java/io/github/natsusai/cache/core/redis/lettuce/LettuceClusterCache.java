@@ -168,6 +168,16 @@ public class LettuceClusterCache extends LettuceClusterCacheAbstract<String, Obj
   }
 
   @Override
+  public boolean exists(String key, String namespace) {
+    return commands.exists(buildCacheKey(key, namespace)) > 0;
+  }
+
+  @Override
+  public boolean rawExists(String key) {
+    return commands.exists(key) > 0;
+  }
+
+  @Override
   public RedisClusterCommands<String, Object> getClient() {
     return commands;
   }
