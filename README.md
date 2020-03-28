@@ -23,10 +23,13 @@ JedisCache、ShardedJedisCache、
 LettuceCache、LettuceClusterCache
 
 e.g.
-```java
+```
 Cache cache = new LettuceCache("prefix-string", "localhost", 6379);
 User user = cache.get(someKey, User.class);
 ```
+
+### Tips
+编译时请跳过test
 
 ### TODO
 - [ ] 实现RedisLock  
