@@ -9,13 +9,13 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
-public class LettuceCacheTest {
+public class LettuceSentinelCacheTest {
 
   private static Cache cache;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    cache = new LettuceCache("test", "192.168.8.210", 6379, "123456");
+    cache = new LettuceSentinelCache("test", "mymaster", "124.160.66.41", 12009);
     RedisCommands<String, Object> client = cache.getClient();
     client.select(9);
   }

@@ -24,6 +24,10 @@ public class LettuceCache extends LettuceCacheAbstract<String, Object> implement
     super(prefix, redisClient);
   }
 
+  public LettuceCache(String prefix, RedisClient redisClient, RedisCodec<String, Object> redisCodec) {
+    super(prefix, redisClient, redisCodec);
+  }
+
   public LettuceCache(String prefix, String host, int port) {
     super(prefix, host, port);
   }

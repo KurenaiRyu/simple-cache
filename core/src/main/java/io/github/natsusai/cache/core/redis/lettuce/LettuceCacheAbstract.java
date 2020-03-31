@@ -42,6 +42,13 @@ public abstract class LettuceCacheAbstract<K, V> {
     this.commands = this.connection.sync();
   }
 
+  public LettuceCacheAbstract(String prefix, RedisClient redisClient, RedisCodec<K, V> redisCodec) {
+    this.PREFIX = prefix == null ? "" : prefix;
+    this.redisClient = redisClient;
+    this.connection = this.redisClient.connect(redisCodec);
+    this.commands = this.connection.sync();
+  }
+
   public LettuceCacheAbstract(String prefix, String host, int port) {
     this.PREFIX = prefix == null ? "" : prefix;
     this.redisClient = RedisClient.create(RedisURI.builder()

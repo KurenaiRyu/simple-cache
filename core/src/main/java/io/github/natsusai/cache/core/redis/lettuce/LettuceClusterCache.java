@@ -5,6 +5,7 @@ import io.lettuce.core.KeyValue;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.cluster.api.sync.RedisClusterCommands;
+import io.lettuce.core.codec.RedisCodec;
 import lombok.Getter;
 
 import java.util.*;
@@ -24,12 +25,24 @@ public class LettuceClusterCache extends LettuceClusterCacheAbstract<String, Obj
     super(prefix, redisClusterClient);
   }
 
+  public LettuceClusterCache(String prefix, RedisClusterClient redisClusterClient, RedisCodec<String, Object> redisCodec) {
+    super(prefix, redisClusterClient, redisCodec);
+  }
+
   public LettuceClusterCache(String prefix, String host, int port) {
     super(prefix, host, port);
   }
 
+  public LettuceClusterCache(String prefix, String host, int port, RedisCodec<String, Object> redisCodec) {
+    super(prefix, host, port, redisCodec);
+  }
+
   public LettuceClusterCache(String prefix, List<RedisURI> redisURIs) {
     super(prefix, redisURIs);
+  }
+
+  public LettuceClusterCache(String prefix, List<RedisURI> redisURIs, RedisCodec<String, Object> redisCodec) {
+    super(prefix, redisURIs, redisCodec);
   }
 
   @Override
