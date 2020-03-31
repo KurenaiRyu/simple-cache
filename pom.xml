@@ -10,6 +10,7 @@
     <modules>
         <module>core</module>
         <module>simple-cache-micronaut-starter</module>
+        <module>simple-cache-spring-boot-starter</module>
     </modules>
 
     <distributionManagement>
