@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Jedis Cache
+ * Lettuce Cluster Cache Abstract
  *
  * @param <K>
  * @author liufuhong

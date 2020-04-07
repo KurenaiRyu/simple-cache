@@ -6,6 +6,8 @@ import io.lettuce.core.codec.RedisCodec;
 import java.nio.ByteBuffer;
 
 /**
+ * Kryo Codec
+ *
  * @author liufuhong
  * @since 2020-03-13 10:15
  */

@@ -1,6 +1,7 @@
 package io.github.natsusai.cache.core.redis.lettuce;
 
 import io.github.natsusai.cache.core.Cache;
+import io.github.natsusai.cache.core.util.SnowFlakeGenerator;
 import io.lettuce.core.KeyValue;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.sync.RedisCommands;
@@ -8,10 +9,11 @@ import io.lettuce.core.codec.RedisCodec;
 import lombok.Getter;
 
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Jedis Cache
+ * Lettuce Cache
  *
  * @author liufuhong
  * @since 2020-03-10 15:56
@@ -190,6 +192,20 @@ public class LettuceCache extends LettuceCacheAbstract<String, Object> implement
   }
 
   @Override
+  public <R> R lock(String lockKey, long lockValidityTimeInMilliseconds, Supplier<R> supplier) throws Exception {
+    try (LettuceLock<String, Object> lock =
+        new LettuceLock<>(SnowFlakeGenerator.getInstance().nextId() + "",
+            lockKey,
+            lockValidityTimeInMilliseconds,
+            this.commands)
+    ) {
+      if (lock.lock()) return supplier.get();
+    }
+    return null;
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
   public RedisCommands<String, Object> getClient() {
     return commands;
   }

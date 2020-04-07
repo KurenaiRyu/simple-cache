@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Jedis Cache
+ * Lettuce Cache Abstract
  *
  * @param <K>
  * @author liufuhong

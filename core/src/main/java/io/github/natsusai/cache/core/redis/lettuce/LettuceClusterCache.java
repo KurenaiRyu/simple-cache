@@ -12,7 +12,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Jedis Cache
+ * Lettuce Cluster Cache
  *
  * @author liufuhong
  * @since 2020-03-10 15:56

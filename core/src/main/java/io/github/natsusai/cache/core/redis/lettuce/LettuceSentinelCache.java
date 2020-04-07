@@ -5,6 +5,8 @@ import io.lettuce.core.RedisURI;
 import io.lettuce.core.codec.RedisCodec;
 
 /**
+ * Lettuce Sentinel Cache
+ *
  * @author liufuhong
  * @since 2020-03-30 11:05
  */

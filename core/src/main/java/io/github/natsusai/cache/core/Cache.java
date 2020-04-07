@@ -590,6 +590,22 @@ public interface Cache {
   boolean rawExists(String key);
 
   /**
+   * 分布式锁
+   * <br/>
+   * 默认抛出不支持操作异常
+   *
+   * @param lockKey 锁的key
+   * @param lockValidityTimeInMilliseconds 锁的有效时间(ms)
+   * @param supplier 被锁的操作
+   * @param <R> 被锁方法返回类型
+   * @exception NotSupportOperationException 不支持该操作时抛出异常
+   * @return 被锁操作返回值
+   */
+  default <R> R lock(String lockKey, long lockValidityTimeInMilliseconds, Supplier<R> supplier) throws Exception {
+    throw new NotSupportOperationException();
+  }
+
+  /**
    * 获取调用客户端实例（不进行包装的客户端）
    *
    * @return 客户端实例
