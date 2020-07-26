@@ -4,7 +4,6 @@ import io.github.natsusai.cache.core.Cache;
 import io.github.natsusai.cache.core.redis.User;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import redis.clients.jedis.Jedis;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -15,9 +14,7 @@ public class RedisShardCacheTest {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    cache = new JedisCache("test", "192.168.8.210", 6379, "123456");
-    Jedis client = cache.getClient();
-    client.select(9);
+    cache = new JedisCache("test", "124.160.66.41", 12008, null, 15);
   }
 
   @Test

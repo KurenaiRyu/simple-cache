@@ -15,7 +15,7 @@ public class LettuceCacheTest {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    cache = new LettuceCache("test", "192.168.8.210", 6379, "123456");
+    cache = new LettuceCache("test", "124.160.66.41", 12008);
     RedisCommands<String, Object> client = cache.getClient();
     client.select(9);
   }
