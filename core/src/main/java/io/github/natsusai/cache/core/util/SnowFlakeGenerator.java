@@ -1,8 +1,3 @@
-/*******************************************************************************
- * 广州理德物联网科技有限公司
- * Copyright (c) 2018.
- ******************************************************************************/
-
 package io.github.natsusai.cache.core.util;
 
 /**
@@ -25,9 +20,9 @@ public class SnowFlakeGenerator {
   /**
    * 每一部分的最大值
    */
-  private final static long MAX_DATACENTER_NUM = -1L ^ (-1L << DATACENTER_BIT);
-  private final static long MAX_MACHINE_NUM = -1L ^ (-1L << MACHINE_BIT);
-  private final static long MAX_SEQUENCE = -1L ^ (-1L << SEQUENCE_BIT);
+  private final static long MAX_DATACENTER_NUM = ~(-1L << DATACENTER_BIT);
+  private final static long MAX_MACHINE_NUM = ~(-1L << MACHINE_BIT);
+  private final static long MAX_SEQUENCE = ~(-1L << SEQUENCE_BIT);
 
   /**
    * 每一部分向左的位移
@@ -36,8 +31,8 @@ public class SnowFlakeGenerator {
   private final static long DATACENTER_LEFT = SEQUENCE_BIT + MACHINE_BIT;
   private final static long TIMESTMP_LEFT = DATACENTER_LEFT + DATACENTER_BIT;
 
-  private long datacenterId;  //数据中心
-  private long machineId;     //机器标识
+  private final long datacenterId;  //数据中心
+  private final long machineId;     //机器标识
   private long sequence = 0L; //序列号
   private long lastStmp = -1L;//上一次时间戳
 
