@@ -1,6 +1,7 @@
 package io.github.natsusai.cache.core;
 
 import io.github.natsusai.cache.core.exception.NotSupportOperationException;
+import org.apache.commons.lang3.RandomUtils;
 
 import java.util.Collection;
 import java.util.List;
@@ -120,10 +121,10 @@ public interface Cache {
 
     return Optional.ofNullable((T) get(key, namespace))
         .orElseGet(() -> {
-          if (!exists(key, namespace)) return null;
+          if (exists(key, namespace)) return null;
           T result = supplier.get();
           if (result == null) {
-            set(key, namespace, VOLATILITY_TIME, null);
+            set(key, namespace, RandomUtils.nextLong(VOLATILITY_TIME/10, VOLATILITY_TIME), null);
           } else if (overWrite) {
             set(key, namespace, result);
           } else {
@@ -173,10 +174,11 @@ public interface Cache {
 
     return Optional.ofNullable((T) get(key, namespace))
         .orElseGet(() -> {
-          if (!exists(key, namespace)) return null;
+          if (exists(key, namespace)) return null;
           T result = supplier.get();
           if (result == null) {
-            set(key, namespace, VOLATILITY_TIME, null);
+            set(key, namespace, RandomUtils
+                .nextLong(Math.min(VOLATILITY_TIME/10, ttl/10), Math.min(VOLATILITY_TIME, ttl)), null);
           } else if (overWrite) {
             set(key, namespace, ttl, result);
           } else {

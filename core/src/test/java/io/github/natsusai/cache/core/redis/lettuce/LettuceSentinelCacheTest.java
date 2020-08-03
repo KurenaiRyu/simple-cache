@@ -6,8 +6,7 @@ import io.lettuce.core.api.sync.RedisCommands;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 public class LettuceSentinelCacheTest {
 
@@ -35,5 +34,14 @@ public class LettuceSentinelCacheTest {
     cache.clear(User.class);
     User user3 = cache.get(user.getName(), User.class);
     assertNull(user3);
+  }
+
+  @Test
+  public void testGetOrElse() {
+    String orElse = cache.getOrElse("Kurenai", "Message", 1000,() -> "Hello!");
+    String get = cache.get("Kurenai", "Message");
+    assertNotNull("Get cannot be null!", get);
+    assertNotNull("orElse cannot be null!", orElse);
+    assertEquals(orElse, get);
   }
 }
