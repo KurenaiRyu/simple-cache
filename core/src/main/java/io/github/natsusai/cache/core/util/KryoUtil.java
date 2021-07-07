@@ -4,9 +4,8 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoException;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import com.esotericsoftware.kryo.pool.KryoPool;
+import com.esotericsoftware.kryo.util.Pool;
 import org.apache.commons.codec.binary.Base64;
-import org.objenesis.strategy.StdInstantiatorStrategy;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -20,18 +19,19 @@ import java.io.UnsupportedEncodingException;
 public class KryoUtil {
  
     private static final String DEFAULT_ENCODING = "UTF-8";
-    private static final KryoPool KRYO_POOL = new KryoPool.Builder(() -> {
-        final Kryo kryo = new Kryo();
-        //支持对象循环引用（否则会栈溢出）
-        kryo.setReferences(true); //默认值就是 true，添加此行的目的是为了提醒维护者，不要改变这个配置
+    private static final Pool<Kryo> KRYO_POOL = new Pool<Kryo>(true, false, 8) {
+        @Override
+        protected Kryo create() {
+            final Kryo kryo = new Kryo();
+            //支持对象循环引用（否则会栈溢出）
+            kryo.setReferences(true); //默认值就是 true，添加此行的目的是为了提醒维护者，不要改变这个配置
 
-        //不强制要求注册类（注册行为无法保证多个 JVM 内同一个类的注册编号相同；而且业务系统中大量的 Class 也难以一一注册）
-        kryo.setRegistrationRequired(false); //默认值就是 false，添加此行的目的是为了提醒维护者，不要改变这个配置
+            //不强制要求注册类（注册行为无法保证多个 JVM 内同一个类的注册编号相同；而且业务系统中大量的 Class 也难以一一注册）
+            kryo.setRegistrationRequired(false); //默认值就是 false，添加此行的目的是为了提醒维护者，不要改变这个配置
 
-        kryo.setInstantiatorStrategy(new Kryo.DefaultInstantiatorStrategy(
-            new StdInstantiatorStrategy()));
-        return kryo;
-    }).softReferences().build();
+            return kryo;
+        }
+    };
  
 
     /**
@@ -40,7 +40,7 @@ public class KryoUtil {
      * @return 当前线程的 Kryo 实例
      */
     public static Kryo getInstance() {
-        return KRYO_POOL.borrow();
+        return KRYO_POOL.obtain();
     }
 
     //-----------------------------------------------
@@ -70,7 +70,7 @@ public class KryoUtil {
         } catch (IOException e) {
             throw new KryoException(e.getMessage(), e.getCause());
         } finally {
-            KRYO_POOL.release(kryo);
+            KRYO_POOL.free(kryo);
         }
     }
  
@@ -110,7 +110,7 @@ public class KryoUtil {
         } catch (IOException e) {
             throw new KryoException(e.getMessage(), e.getCause());
         } finally {
-          KRYO_POOL.release(kryo);
+          KRYO_POOL.free(kryo);
         }
     }
  
@@ -158,7 +158,7 @@ public class KryoUtil {
         } catch (IOException e) {
             throw new KryoException(e.getMessage(), e.getCause());
         } finally {
-            KRYO_POOL.release(kryo);
+            KRYO_POOL.free(kryo);
         }
     }
  
@@ -198,7 +198,7 @@ public class KryoUtil {
         } catch (IOException e) {
             throw new KryoException(e.getMessage(), e.getCause());
         } finally {
-            KRYO_POOL.release(kryo);
+            KRYO_POOL.free(kryo);
         }
 
     }
