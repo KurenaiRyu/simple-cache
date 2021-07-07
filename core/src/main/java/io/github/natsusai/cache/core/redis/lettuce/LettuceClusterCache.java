@@ -53,13 +53,13 @@ public class LettuceClusterCache extends LettuceClusterCacheAbstract<String, Obj
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> T  get(String key, String namespace) {
+  public <T> T  get(String namespace, String key) {
     return (T) commands.get(buildCacheKey(key, namespace));
   }
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> List<T> multiGet(Collection<String> keys, String namespace) {
+  public <T> List<T> get(String namespace, Collection<String> keys) {
     List<KeyValue<String, Object>> keyValues = commands.mget(keys.stream()
                                                             .map(key -> buildCacheKey(key, namespace))
                                                             .toArray(String[]::new));
@@ -77,12 +77,12 @@ public class LettuceClusterCache extends LettuceClusterCacheAbstract<String, Obj
   }
 
   @Override
-  public <T> void set(String key, String namespace, T cache) {
+  public <T> void put(String namespace, String key, T cache) {
     commands.set(buildCacheKey(key, namespace), cache);
   }
 
   @Override
-  public <T> void set(String key, String namespace, long ttl, T cache) {
+  public <T> void put(String key, String namespace, long ttl, T cache) {
     commands.psetex(buildCacheKey(key, namespace), ttl, cache);
   }
 
@@ -112,12 +112,12 @@ public class LettuceClusterCache extends LettuceClusterCacheAbstract<String, Obj
   }
 
   @Override
-  public <T> Boolean setIfAbsent(String key, String namespace, T cache) {
+  public <T> Boolean putIfAbsent(String namespace, String key, T cache) {
     return commands.setnx(buildCacheKey(key, namespace), cache);
   }
 
   @Override
-  public <T> Boolean setIfAbsent(String key, String namespace, long ttl, T cache) {
+  public <T> Boolean putIfAbsent(String key, String namespace, long ttl, T cache) {
     String buildKey = buildCacheKey(key, namespace);
     boolean result = commands.setnx(buildKey, cache);
     commands.pexpire(buildKey, ttl);
@@ -181,7 +181,7 @@ public class LettuceClusterCache extends LettuceClusterCacheAbstract<String, Obj
   }
 
   @Override
-  public boolean exists(String key, String namespace) {
+  public boolean exists(String namespace, String key) {
     return commands.exists(buildCacheKey(key, namespace)) > 0;
   }
 

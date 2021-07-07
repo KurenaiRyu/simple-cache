@@ -24,11 +24,11 @@ public class LettuceSentinelCacheTest {
     User user = new User();
     user.setAge(20);
     user.setName("Kurenai");
-    cache.set(user.getName(), user);
+    cache.put(user.getName(), user);
     User user1 = cache.get(user.getName(), User.class);
     assertEquals(user.getName(), user1.getName());
     user.setName("NatsuSai");
-    cache.setIfAbsent(user1.getName(), user);
+    cache.putIfAbsent(user1.getName(), user);
     User user2 = cache.get(user1.getName(), User.class);
     assertEquals(user1.getName(), user2.getName());
     cache.clear(User.class);
@@ -38,8 +38,8 @@ public class LettuceSentinelCacheTest {
 
   @Test
   public void testGetOrElse() {
-    String orElse = cache.getOrElse("Kurenai", "Message", 1000,() -> "Hello!");
-    String get = cache.get("Kurenai", "Message");
+    String orElse = cache.getOrElseGet("Message", "Kurenai", 1000, () -> "Hello!");
+    String get = cache.get("Message", "Kurenai");
     assertNotNull("Get cannot be null!", get);
     assertNotNull("orElse cannot be null!", orElse);
     assertEquals(orElse, get);

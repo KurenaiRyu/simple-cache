@@ -25,11 +25,11 @@ public class LettuceCacheTest {
     User user = new User();
     user.setAge(20);
     user.setName("Kurenai");
-    cache.set(user.getName(), user);
+    cache.put(user.getName(), user);
     User user1 = cache.get(user.getName(), User.class);
     assertEquals(user.getName(), user1.getName());
     user.setName("NatsuSai");
-    cache.setIfAbsent(user1.getName(), user);
+    cache.putIfAbsent(user1.getName(), user);
     User user2 = cache.get(user1.getName(), User.class);
     assertEquals(user1.getName(), user2.getName());
     cache.clear(User.class);
