@@ -8,7 +8,7 @@ import java.nio.ByteBuffer;
 /**
  * Kryo Codec
  *
- * @author liufuhong
+ * @author Kurenai
  * @since 2020-03-13 10:15
  */
 

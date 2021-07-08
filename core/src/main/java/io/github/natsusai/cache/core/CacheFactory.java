@@ -1,7 +1,7 @@
 package io.github.natsusai.cache.core;
 
 /**
- * @author liufuhong
+ * @author Kurenai
  * @since 2020-03-10 16:02
  */
 

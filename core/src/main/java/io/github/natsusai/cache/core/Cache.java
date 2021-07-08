@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
  * @since 2019-08-07 13:20
  */
 
-//@SuppressWarnings("unchecked")
 public interface Cache {
 
     long VOLATILITY_TIME = 10 * 1000L;//短存时间
@@ -44,9 +43,9 @@ public interface Cache {
      * @param func      不存在时则调用该方法获取
      * @return 返回对应缓存对象
      */
-    default <K, V> V getOrElseGet(String namespace, K key, Function<K, V> func) {
+    default <K, V> V get(String namespace, K key, Function<K, V> func) {
 
-        return getOrElseGet(namespace, key, -1, func);
+        return get(namespace, key, -1, func);
     }
 
     /**
@@ -57,10 +56,11 @@ public interface Cache {
      * @param namespace 命名空间（类似组的概念）
      * @param key       缓存标识/id
      * @param ttl       time to live (ms)
-     * @param func  回调函数
+     * @param func      回调函数
      * @return 返回对应缓存对象
      */
-    default <K, V> V getOrElseGet(String namespace, K key, long ttl, Function<K, V> func) {
+    @SuppressWarnings("unchecked")
+    default <K, V> V get(String namespace, K key, long ttl, Function<K, V> func) {
 
         return (V) Optional.ofNullable(get(namespace, key))
                 .orElseGet(() -> {
@@ -69,7 +69,7 @@ public interface Cache {
                     if (result == null) {
                         putIfAbsent(namespace, key, null, RandomUtils.nextLong(VOLATILITY_TIME / 10, VOLATILITY_TIME));
                     } else {
-                        putIfAbsent(namespace, key,  result, ttl);
+                        putIfAbsent(namespace, key, result, ttl);
                     }
                     return result;
                 });
@@ -93,15 +93,14 @@ public interface Cache {
      * @param <V>       值类型
      * @param namespace 命名空间（类似组的概念）
      * @param keys      缓存标识/id集合
-     * @param valueFunc  回调函数
+     * @param valueFunc 回调函数
      * @return 返回对应缓存对象
      */
-    @SuppressWarnings("unchecked")
     default <K, V> List<V> get(String namespace, Collection<K> keys,
                                Function<List<K>, List<V>> valueFunc, Function<V, K> keyFunc) {
-        List<V> values = get(namespace, keys);
-        var cacheKeys = values.stream().map(keyFunc).collect(Collectors.toList());
-        var missKeys = keys.stream().filter(k -> !cacheKeys.contains(k)).collect(Collectors.toList());
+        List<V> values    = get(namespace, keys);
+        var     cacheKeys = values.stream().map(keyFunc).collect(Collectors.toList());
+        var     missKeys  = keys.stream().filter(k -> !cacheKeys.contains(k)).collect(Collectors.toList());
         Optional.ofNullable(valueFunc.apply(missKeys)).filter(l -> !l.isEmpty()).ifPresent(vList -> {
             var map = new HashMap<K, V>();
             vList.forEach(v -> map.put(keyFunc.apply(v), v));
@@ -115,8 +114,6 @@ public interface Cache {
 
     // region put
 
-    <K, V> void put(String namespace, Map<K,V> map);
-
     /**
      * 添加缓存，其中命名空间将采用class对象的限定包名（全名）
      *
@@ -124,10 +121,10 @@ public interface Cache {
      * @param <V>       值类型
      * @param namespace 命名空间（类似组的概念）
      * @param key       缓存标识/id
-     * @param cache     缓存对象
+     * @param value     缓存对象
      * @return 执行结果
      */
-    <K, V> void put(String namespace, K key, V cache);
+    <K, V> void put(String namespace, K key, V value);
 
     /**
      * 添加缓存
@@ -135,46 +132,23 @@ public interface Cache {
      * @param <K>       键类型
      * @param <V>       值类型
      * @param namespace 命名空间（类似组的概念）
-     * @param key   缓存标识/id
-     * @param cache 缓存对象
-     * @param ttl   time to live (ms)
+     * @param key       缓存标识/id
+     * @param value     缓存对象
+     * @param ttl       time to live (ms)
      * @return 执行结果
      */
-    <K, V> void put(String namespace, K key, V cache, long ttl);
-
-    /**
-     * 添加缓存，其中命名空间将采用class对象的限定包名（全名）
-     *
-     * @param keyValueMap 缓存key和对象的map
-     * @param <T>         缓存对象类型
-     * @return 执行结果
-     */
-    <T> void multiSet(Map<String, T> keyValueMap);
+    <K, V> void put(String namespace, K key, V value, long ttl);
 
     /**
      * 添加缓存
      *
      * @param namespace   命名空间（类似组的概念）
      * @param keyValueMap 缓存key和对象的map
-     * @param <T>         缓存对象类型
+     * @param <K>         键类型
+     * @param <V>         值类型
      * @return 执行结果
      */
-    <T> void multiSet(String namespace,
-                      Map<String, T> keyValueMap);
-
-    /**
-     * 如果不存在则添加缓存
-     *
-     * @param key   缓存唯一标识/id
-     * @param cache 缓存对象
-     * @param <V>   缓存对象类型
-     * @return 执行结果
-     */
-    default <V> Boolean putIfAbsent(String key, V cache) {
-
-        return putIfAbsent(cache.getClass()
-                .getName(), key, cache);
-    }
+    <K, V> void put(String namespace, Map<K, V> keyValueMap);
 
     /**
      * 如果不存在则添加缓存
@@ -183,10 +157,10 @@ public interface Cache {
      * @param <V>       值类型
      * @param namespace 命名空间（类似组的概念）
      * @param key       缓存唯一标识/id
-     * @param cache     缓存对象
+     * @param value     缓存对象
      * @return 执行结果
      */
-    <K, V> Boolean putIfAbsent(String namespace, K key, V cache);
+    <K, V> boolean putIfAbsent(String namespace, K key, V value);
 
     /**
      * 如果不存在则添加缓存
@@ -195,43 +169,31 @@ public interface Cache {
      * @param <V>       值类型
      * @param namespace 命名空间（类似组的概念）
      * @param key       缓存唯一标识/id
-     * @param cache     缓存对象
+     * @param value     缓存对象
      * @return 执行结果
      */
-    <K, V> Boolean putIfAbsent(String namespace, K key, V cache, long ttl);
-
-    /**
-     * 如果不存在则添加缓存
-     *
-     * @param keyValueMap 缓存key和对象的map
-     * @param <T>         缓存对象类型
-     * @return 执行结果
-     */
-    <T> Boolean multiSetIfAbsent(Map<String, T> keyValueMap);
+    <K, V> boolean putIfAbsent(String namespace, K key, V value, long ttl);
 
     /**
      * 如果不存在则添加缓存
      *
      * @param namespace   命名空间（类似组的概念）
-     * @param keyValueMap 缓存key和对象的map
-     * @param <T>         缓存对象类型
+     * @param keyValueMap 缓存key和对象的map<K, V>
      * @return 执行结果
      */
-    <T> Boolean multiSetIfAbsent(String namespace,
-                                 Map<String, T> keyValueMap);
+    <K, V> boolean putIfAbsent(String namespace, Map<K, V> keyValueMap);
 
     /**
      * 如果不存在则添加缓存
      *
+     * @param <K>         键类型
+     * @param <V>         值类型
      * @param namespace   命名空间（类似组的概念）
      * @param keyValueMap 缓存key和对象的map
      * @param ttl         time to live (ms)
-     * @param <T>         缓存对象类型
      * @return 执行结果
      */
-    <T> Boolean multiSetIfAbsent(String namespace,
-                                 long ttl,
-                                 Map<String, T> keyValueMap);
+    <K, V> boolean putIfAbsent(String namespace, Map<K, V> keyValueMap, long ttl);
 
     // endregion
 
@@ -240,68 +202,16 @@ public interface Cache {
     /**
      * 移除指定缓存（非模糊匹配）
      *
-     * @param key   缓存标识/id
-     * @param clazz 缓存的class对象
-     * @return 执行结果
-     */
-    default Boolean remove(String key,
-                           Class clazz) {
-
-        return remove(key, clazz.getName());
-    }
-
-    /**
-     * 移除指定缓存（非模糊匹配）
-     *
-     * @param key       缓存标识/id
      * @param namespace 命名空间（类似组的概念）
+     * @param keys       缓存标识/id
+     * @param <K>       键类型
      * @return 执行结果
      */
-    Boolean remove(String key,
-                   String namespace);
-
-    /**
-     * 移除指定缓存（非模糊匹配）
-     * </p>
-     * 若其中一个列表只有一个，则以1对n进行处理
-     *
-     * @param keys  缓存标识/id集合
-     * @param clazz 缓存的class对象集合
-     * @return 执行结果
-     */
-    default Boolean multiRemoveByClazz(Collection<String> keys,
-                                       Class clazz) {
-
-        return multiRemove(keys, clazz.getName());
-    }
-
-
-    /**
-     * 移除指定缓存（非模糊匹配）
-     * </p>
-     * 若其中一个列表只有一个，则以1对n进行处理
-     *
-     * @param keys      缓存标识/id集合
-     * @param namespace 命名空间（类似组的概念）
-     * @return 执行结果
-     */
-    Boolean multiRemove(Collection<String> keys,
-                        String namespace);
+    <K> boolean remove(String namespace, K... keys);
 
     // endregion
 
     // region clear
-
-    /**
-     * 清除指定class对应的命名空间所有缓存
-     *
-     * @param clazz java类
-     * @return 执行结果
-     */
-    default <T> Boolean clear(Class<T> clazz) {
-
-        return clear(clazz.getName());
-    }
 
     /**
      * 清除指定命名空间所有缓存
@@ -309,14 +219,14 @@ public interface Cache {
      * @param namespace 命名空间（类似组的概念）
      * @return 执行结果
      */
-    Boolean clear(String namespace);
+    boolean clear(String namespace);
 
     /**
      * 清除当前应用所有缓存
      *
      * @return 执行结果
      */
-    Boolean clear();
+    boolean clearAll();
 
     // endregion
 
@@ -326,10 +236,11 @@ public interface Cache {
      * 查看指定缓存是否存在
      *
      * @param namespace 命名空间
-     * @param key       键值
+     * @param keys       键值
      * @return
      */
-    <K> boolean exists(String namespace, K key);
+    @SuppressWarnings("unchecked")
+    <K> boolean exists(String namespace, K... keys);
 
     /**
      * 分布式锁
@@ -352,6 +263,6 @@ public interface Cache {
      *
      * @return 客户端实例
      */
-    <T> T getClient();
+    <T> T getExec() throws Exception;
     // endregion
 }

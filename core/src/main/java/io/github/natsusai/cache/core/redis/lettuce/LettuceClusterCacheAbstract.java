@@ -16,7 +16,7 @@ import java.util.stream.Stream;
  * Lettuce Cluster Cache Abstract
  *
  * @param <K>
- * @author liufuhong
+ * @author Kurenai
  * @since 2020-03-10 15:56
  */
 

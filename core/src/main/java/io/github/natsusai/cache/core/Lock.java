@@ -3,7 +3,7 @@ package io.github.natsusai.cache.core;
 /**
  * Lock
  *
- * @author liufuhong
+ * @author Kurenai
  * @since 2020-04-07 14:56
  */
 

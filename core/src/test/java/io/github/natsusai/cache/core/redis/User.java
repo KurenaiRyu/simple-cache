@@ -3,7 +3,7 @@ package io.github.natsusai.cache.core.redis;
 import lombok.Data;
 
 /**
- * @author liufuhong
+ * @author Kurenai
  * @since 2020-03-13 9:56
  */
 

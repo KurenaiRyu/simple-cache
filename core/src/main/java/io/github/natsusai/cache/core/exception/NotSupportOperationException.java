@@ -3,7 +3,7 @@ package io.github.natsusai.cache.core.exception;
 /**
  * 不支持操作异常
  * </p>
- * @author liufuhong
+ * @author Kurenai
  * @since 2020-03-12 10:31
  */
 

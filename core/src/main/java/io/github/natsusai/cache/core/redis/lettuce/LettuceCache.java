@@ -1,212 +1,180 @@
 package io.github.natsusai.cache.core.redis.lettuce;
 
-import io.github.natsusai.cache.core.Cache;
-import io.github.natsusai.cache.core.util.SnowFlakeGenerator;
-import io.lettuce.core.KeyValue;
-import io.lettuce.core.RedisClient;
-import io.lettuce.core.api.sync.RedisCommands;
+import io.lettuce.core.RedisURI;
+import io.lettuce.core.api.StatefulConnection;
+import io.lettuce.core.api.sync.RedisServerCommands;
+import io.lettuce.core.api.sync.RedisTransactionalCommands;
 import io.lettuce.core.codec.RedisCodec;
-import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import java.util.*;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Lettuce Cache
  *
- * @author liufuhong
+ * @author Kurenai
  * @since 2020-03-10 15:56
  */
 
-@Getter
-public class LettuceCache extends LettuceCacheAbstract<String, Object> implements Cache {
-
-  public LettuceCache(String prefix, RedisClient redisClient) {
-    super(prefix, redisClient);
-  }
-
-  public LettuceCache(String prefix, RedisClient redisClient, RedisCodec<String, Object> redisCodec) {
-    super(prefix, redisClient, redisCodec);
-  }
-
-  public LettuceCache(String prefix, String host, int port) {
-    super(prefix, host, port);
-  }
-
-  public LettuceCache(String prefix, String host, int port, String password) {
-    super(prefix, host, port, password);
-  }
-
-  public LettuceCache(String prefix, String host, int port, String password, int database) {
-    super(prefix, host, port, password, database);
-  }
-
-  public LettuceCache(String prefix, String host, int port, String password, int database, RedisCodec<String, Object> redisCodec) {
-    super(prefix, host, port, password, database, redisCodec);
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public <T> T rawGet(String key) {
-    return (T) commands.get(key);
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public <T> T  get(String namespace, String key) {
-    return (T) commands.get(buildCacheKey(key, namespace));
-  }
-
-  @Override
-  @SuppressWarnings("unchecked")
-  public <T> List<T> get(String namespace, Collection<String> keys) {
-    List<KeyValue<String, Object>> keyValues = commands.mget(keys.stream()
-                                                            .map(key -> buildCacheKey(key, namespace))
-                                                            .toArray(String[]::new));
-    return (List<T>) keyValues.stream().map(KeyValue::getValue).collect(Collectors.toList());
-  }
-
-  @Override
-  public <T> void rawSet(String key, T cache) {
-    commands.set(key, cache);
-  }
-
-  @Override
-  public <T> void rawSet(String key, long ttl, T cache) {
-    commands.psetex(key, ttl, cache);
-  }
-
-  @Override
-  public <T> void put(String namespace, String key, T cache) {
-    commands.set(buildCacheKey(key, namespace), cache);
-  }
-
-  @Override
-  public <T> void put(String key, String namespace, long ttl, T cache) {
-    commands.psetex(buildCacheKey(key, namespace), ttl, cache);
-  }
-
-  @Override
-  public <T> void multiSet(Map<String, T> keyValueMap) {
-    Map<String, Object> params = new HashMap<>();
-    keyValueMap.forEach((k, v) -> params.put(buildCacheKey(k, v.getClass().getName()), v));
-    commands.mset(params);
-  }
-
-  @Override
-  public <T> void multiSet(String namespace, Map<String, T> keyValueMap) {
-    Map<String, Object> params = new HashMap<>();
-    keyValueMap.forEach((k, v) -> params.put(buildCacheKey(k, namespace), v));
-    commands.mset(params);
-  }
-
-  @Override
-  public <T> Boolean rawSetIfAbsent(String key, T cache) {
-    return commands.setnx(key, cache);
-  }
-
-  @Override
-  public <T> Boolean rawSetIfAbsent(String key, long ttl, T cache) {
-    commands.setnx(key, cache);
-    return commands.pexpire(key, ttl);
-  }
-
-  @Override
-  public <T> Boolean putIfAbsent(String namespace, String key, T cache) {
-    return commands.setnx(buildCacheKey(key, namespace), cache);
-  }
-
-  @Override
-  public <T> Boolean putIfAbsent(String key, String namespace, long ttl, T cache) {
-    String buildKey = buildCacheKey(key, namespace);
-    boolean result = commands.setnx(buildKey, cache);
-    commands.pexpire(buildKey, ttl);
-    return result;
-  }
-
-  @Override
-  public <T> Boolean multiSetIfAbsent(Map<String, T> keyValueMap) {
-    Map<String, Object> params = new HashMap<>();
-    keyValueMap.forEach((k ,v) -> params.put(buildCacheKey(k, v.getClass().getName()), v));
-    return commands.msetnx(params);
-  }
-
-  @Override
-  public <T> Boolean multiSetIfAbsent(String namespace, Map<String, T> keyValueMap) {
-    Map<String, Object> params = new HashMap<>();
-    keyValueMap.forEach((k ,v) -> params.put(buildCacheKey(k, namespace), v));
-    return commands.msetnx(params);
-  }
-
-  @Override
-  public <T> Boolean multiSetIfAbsent(String namespace, long ttl, Map<String, T> keyValueMap) {
-    Map<String, Object> params = new HashMap<>();
-    List<String> buildKeys = new ArrayList<>();
-    keyValueMap.forEach((k ,v) -> {
-      String buildKey = buildCacheKey(k, namespace);
-      buildKeys.add(buildKey);
-      params.put(buildKey, v);
-    });
-    Boolean result = commands.msetnx(params);
-    buildKeys.forEach(key -> commands.pexpire(key, ttl));
-    return result;
-  }
-
-  @Override
-  public Boolean remove(String key, String namespace) {
-    return commands.del(buildCacheKey(key, namespace)) > 0;
-  }
-
-  @Override
-  public Boolean multiRemove(Collection<String> keys, String namespace) {
-    List<String> params = new ArrayList<>();
-    keys.forEach(k -> params.add(buildCacheKey(k, namespace)));
-    return commands.del(params.toArray(new String[0])) > 0;
-  }
-
-  @Override
-  public Boolean rawRemove(String key) {
-    return commands.del(key) > 0;
-  }
-
-  @Override
-  public Boolean clear(String namespace) {
-    return commands.del(buildNamespacePatternKey(namespace)) > 0;
-  }
-
-  @Override
-  public boolean exists(String namespace, String key) {
-    return commands.exists(buildCacheKey(key, namespace)) > 0;
-  }
-
-  @Override
-  public boolean rawExists(String key) {
-    return commands.exists(key) > 0;
-  }
-
-  @Override
-  public Boolean clear() {
-    commands.flushdb();
-    return true;
-  }
-
-  @Override
-  public <R> R lock(String lockKey, long lockValidityTimeInMilliseconds, Supplier<R> supplier) throws Exception {
-    try (LettuceLock<String, Object> lock =
-        new LettuceLock<>(SnowFlakeGenerator.getInstance().nextId() + "",
-            lockKey,
-            lockValidityTimeInMilliseconds,
-            this.commands)
-    ) {
-      if (lock.lock()) return supplier.get();
+@Slf4j
+public class LettuceCache extends LettuceCacheAbstract {
+    public LettuceCache(String uri) {
+        super(uri);
     }
-    return null;
-  }
 
-  @Override
-  @SuppressWarnings("unchecked")
-  public RedisCommands<String, Object> getClient() {
-    return commands;
-  }
+    public LettuceCache(String host, int port) {
+        super(host, port);
+    }
+
+    public LettuceCache(String host, int port, int database) {
+        super(host, port, database);
+    }
+
+    public LettuceCache(String host, int port, String password, int database) {
+        super(host, port, password, database);
+    }
+
+    public LettuceCache(String host, int port, String password, int database, RedisCodec<String, ?> redisCodec) {
+        super(host, port, password, database, redisCodec);
+    }
+
+    public LettuceCache(RedisURI redisURI, RedisCodec<String, ?> redisCodec) {
+        super(redisURI, redisCodec);
+    }
+
+    public LettuceCache(RedisURI redisURI, RedisCodec<String, ?> redisCodec, GenericObjectPoolConfig<StatefulConnection<String, ?>> poolConfig) {
+        super(redisURI, redisCodec, poolConfig);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <K, V> V get(String namespace, K key) {
+        return (V) execCmd(cmd -> cmd.get(buildKey(namespace, key)));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <K, V> List<V> get(String namespace, Collection<K> keys) {
+        if (keys.isEmpty()) return Collections.emptyList();
+        return (List<V>) execCmd(cmd -> cmd.mget(keys.stream().map(k -> buildKey(namespace, k)).toArray(String[]::new)));
+    }
+
+    @Override
+    public <K, V> void put(String namespace, K key, V value) {
+        execCmd(cmd -> cmd.set(buildKey(namespace, key), value));
+    }
+
+    @Override
+    public <K, V> void put(String namespace, K key, V value, long ttl) {
+        execCmd(cmd -> cmd.psetex(buildKey(namespace, key), ttl, value));
+    }
+
+    @Override
+    public <K, V> void put(String namespace, Map<K, V> keyValueMap) {
+        var map = new HashMap<String, Object>();
+        keyValueMap.forEach((k, v) -> map.put(buildKey(namespace, k), v));
+        execCmd(cmd -> cmd.mset(map));
+    }
+
+    @Override
+    public <K, V> boolean putIfAbsent(String namespace, K key, V value) {
+        return execCmd(cmd -> cmd.setnx(buildKey(namespace, key), value));
+    }
+
+    @Override
+    public <K, V> boolean putIfAbsent(String namespace, K key, V value, long ttl) {
+        final var redisKey = buildKey(namespace, key);
+        return execCmd(cmd -> {
+            if (cmd instanceof RedisTransactionalCommands) {
+                try {
+                    ((RedisTransactionalCommands<?, ?>) cmd).multi();
+                    if (Boolean.FALSE.equals(cmd.setnx(redisKey, value)) || Boolean.FALSE.equals(cmd.expire(redisKey, ttl))) {
+                        ((RedisTransactionalCommands<?, ?>) cmd).discard();
+                        return false;
+                    }
+                    ((RedisTransactionalCommands<?, ?>) cmd).exec();
+                } catch (Exception e) {
+                    ((RedisTransactionalCommands<?, ?>) cmd).discard();
+                    throw e;
+                }
+            } else {
+                return !Boolean.FALSE.equals(cmd.setnx(redisKey, value)) && !Boolean.FALSE.equals(cmd.expire(redisKey, ttl));
+            }
+            return true;
+        });
+    }
+
+    @Override
+    public <K, V> boolean putIfAbsent(String namespace, Map<K, V> keyValueMap) {
+        var map = new HashMap<String, Object>();
+        keyValueMap.forEach((k, v) -> map.put(buildKey(namespace, k), v));
+        return execCmd(cmd -> cmd.msetnx(map));
+    }
+
+    @Override
+    public <K, V> boolean putIfAbsent(String namespace, Map<K, V> keyValueMap, long ttl) {
+        var map = new HashMap<String, Object>();
+        keyValueMap.forEach((k, v) -> map.put(buildKey(namespace, k), v));
+        return execCmd(cmd -> {
+            if (cmd instanceof RedisTransactionalCommands) {
+                try {
+                    ((RedisTransactionalCommands<?, ?>) cmd).multi();
+                    if (!cmd.msetnx(map)) {
+                        ((RedisTransactionalCommands<?, ?>) cmd).discard();
+                        return false;
+                    }
+                    map.keySet().forEach(k -> cmd.pexpire(k, ttl));
+                    ((RedisTransactionalCommands<?, ?>) cmd).exec();
+                } catch (Exception e) {
+                    ((RedisTransactionalCommands<?, ?>) cmd).discard();
+                }
+            } else {
+                cmd.msetnx(map);
+                map.keySet().forEach(k -> cmd.pexpire(k, ttl));
+            }
+            return true;
+        });
+    }
+
+    @SafeVarargs
+    @Override
+    public final <K> boolean remove(String namespace, K... keys) {
+        var redisKeys = new String[keys.length];
+        for (int i = 0; i < keys.length; i++) {
+            redisKeys[i] = buildKey(namespace, keys[i]);
+        }
+        return execCmd(cmd -> cmd.del(redisKeys) > 0);
+    }
+
+    @SafeVarargs
+    @Override
+    public final <K> boolean exists(String namespace, K... keys) {
+        var redisKeys = new String[keys.length];
+        for (int i = 0; i < keys.length; i++) {
+            redisKeys[i] = buildKey(namespace, keys[i]);
+        }
+        return execCmd(cmd -> cmd.exists(redisKeys) > 0);
+    }
+
+    @Override
+    public boolean clear(String namespace) {
+        return execCmd(cmd -> cmd.del(cmd.keys(buildNamespacePatternKey(namespace)).toArray(String[]::new)) > 0);
+    }
+
+    @Override
+    public boolean clearAll() {
+        execCmd(RedisServerCommands::flushdb);
+        return true;
+    }
+
+    @Override
+    public <T> T getExec() {
+        return null;
+    }
+
+    @Override
+    public boolean isCluster() {
+        return false;
+    }
 }
