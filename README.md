@@ -6,7 +6,7 @@
 需要注意的是这个异常时runtime异常。
 
 ## Features
-- 以命名空间(namespace)和id/键值(key)作为划分
+- 以命名空间(namespace)和id/主键(key)作为划分
 - 默认分隔符用`:`，拼接规则为`namespace:key`
 - 默认不会有超时时间
 - 序列化使用Kryo，以byte数组储存
