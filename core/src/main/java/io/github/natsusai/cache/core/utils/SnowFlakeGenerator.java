@@ -57,10 +57,8 @@ public class SnowFlakeGenerator {
   public static SnowFlakeGenerator getInstance() {
     if (instance == null) {
       instance = new SnowFlakeGenerator(1, 1);
-      return instance;
-    } else {
-      return instance;
     }
+    return instance;
   }
 
   /**

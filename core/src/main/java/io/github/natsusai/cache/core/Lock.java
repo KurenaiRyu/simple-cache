@@ -11,13 +11,10 @@ public interface Lock extends AutoCloseable{
 
   /**
    * 获取锁
-   * <p>
-   * 重试5次, 每次间隔200ms
-   * </p>
    *
    * @return 获取成功返回true
    */
-  boolean lock();
+  boolean lock() throws Exception;
 
   /**
    * 获取锁
@@ -26,19 +23,19 @@ public interface Lock extends AutoCloseable{
    * @param times     重试次数
    * @return 获取成功返回true
    */
-  boolean lock(long sleepTime, int times);
+  boolean lock(long sleepTime, int times) throws Exception;
 
   /**
    * 尝试获取一次锁
    *
    * @return 获取成功返回true
    */
-  boolean tryLockOnce();
+  boolean tryLockOnce() throws Exception;
 
   /**
    * 释放锁
    *
    * @return 释放成功返回true, 没有获得锁或者释放失败返回false
    */
-  boolean releaseLock();
+  boolean releaseLock() throws Exception;
 }

@@ -1,6 +1,8 @@
 package io.github.natsusai.cache.core.redis.lettuce;
 
-import io.github.natsusai.cache.core.redis.RedisCache;
+import io.github.natsusai.cache.core.Lock;
+import io.github.natsusai.cache.core.exception.CacheRunTimeException;
+import io.github.natsusai.cache.core.redis.RedisCacheAbstract;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.api.StatefulConnection;
@@ -15,11 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
-import java.util.Collection;
 import java.util.function.Function;
-
-import static io.github.natsusai.cache.core.utils.StringPool.COLON;
-import static io.github.natsusai.cache.core.utils.StringPool.STAR;
 
 /**
  * Lettuce Cache Abstract
@@ -28,10 +26,9 @@ import static io.github.natsusai.cache.core.utils.StringPool.STAR;
  * @since 2020-03-10 15:56
  */
 @Slf4j
-public abstract class LettuceCacheAbstract implements RedisCache {
+public abstract class LettuceCacheAbstract extends RedisCacheAbstract {
 
     protected final GenericObjectPool<StatefulConnection<String, ?>> POOL;
-    protected final String                                           CONNECTOR = COLON;
 
     public LettuceCacheAbstract(String uri) {
         this(RedisURI.create(uri), new KryoCodec<>());
@@ -85,39 +82,6 @@ public abstract class LettuceCacheAbstract implements RedisCache {
     }
 
     /**
-     * 构建redis键值
-     *
-     * @param namespace 命名空间
-     * @param key       缓存标识/id
-     * @return redis键值
-     */
-    protected <K> String buildKey(String namespace, K key) {
-        return String.join(CONNECTOR, namespace, String.valueOf(key));
-    }
-
-    /**
-     * 构建redis键值
-     *
-     * @param namespace 命名空间
-     * @param keys 键值集合
-     * @param <K> 键值类型
-     * @return redis键值集合
-     */
-    protected <K>  String[] buildKeys(String namespace, Collection<K> keys) {
-        return keys.stream().map(key -> buildKey(namespace, key)).toArray(String[]::new);
-    }
-
-    /**
-     * 生成命名空间所有缓存的表达式（模糊查询）
-     *
-     * @param namespace 命名空间
-     * @return 表达式字符串
-     */
-    protected String buildNamespacePatternKey(String namespace) {
-        return String.join(CONNECTOR, namespace, STAR);
-    }
-
-    /**
      * 从连接池获取一个连接
      * @return redis连接对象
      * @throws Exception
@@ -164,9 +128,8 @@ public abstract class LettuceCacheAbstract implements RedisCache {
         try (StatefulConnection<String, V> connection = connect()) {
             return function.apply(sync(connection));
         } catch (Exception e) {
-            log.error("Execute sync command error!", e);
+            throw new CacheRunTimeException("Execute sync command error!", e);
         }
-        return null;
     }
 
     /**
@@ -179,9 +142,13 @@ public abstract class LettuceCacheAbstract implements RedisCache {
         try (StatefulConnection<String, V> connection = connect()) {
             return function.apply(async(connection));
         } catch (Exception e) {
-            log.error("Execute async command error!", e);
+            throw new CacheRunTimeException("Execute async command error!", e);
         }
-        return null;
+    }
+
+    @Override
+    public Lock getLock(String lockKey, long ttl) throws Exception {
+        return new LettuceLock(lockKey, ttl, this);
     }
 
     @Override

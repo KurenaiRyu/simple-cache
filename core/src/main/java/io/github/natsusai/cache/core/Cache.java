@@ -5,7 +5,6 @@ import org.apache.commons.lang3.RandomUtils;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -98,9 +97,9 @@ public interface Cache {
      */
     default <K, V> List<V> getAll(String namespace, Collection<K> keys,
                                   Function<List<K>, List<V>> valueFunc, Function<V, K> keyFunc) {
-        List<V> values    = getAll(namespace, keys);
-        var     cacheKeys = values.stream().map(keyFunc).collect(Collectors.toList());
-        var     missKeys  = keys.stream().filter(k -> !cacheKeys.contains(k)).collect(Collectors.toList());
+        List<V> values = getAll(namespace, keys);
+        var cacheKeys = values.stream().map(keyFunc).collect(Collectors.toList());
+        var missKeys = keys.stream().filter(k -> !cacheKeys.contains(k)).collect(Collectors.toList());
         Optional.ofNullable(valueFunc.apply(missKeys)).filter(l -> !l.isEmpty()).ifPresent(vList -> {
             var map = new HashMap<K, V>();
             vList.forEach(v -> map.put(keyFunc.apply(v), v));
@@ -214,7 +213,7 @@ public interface Cache {
      *
      * @param <K>       键类型
      * @param namespace 命名空间（类似组的概念）
-     * @param keys       缓存标识/id
+     * @param keys      缓存标识/id
      * @return 执行结果
      */
     <K> boolean removeAll(String namespace, Collection<K> keys);
@@ -246,7 +245,7 @@ public interface Cache {
      * 查看指定缓存是否存在
      *
      * @param namespace 命名空间
-     * @param keys       键值
+     * @param keys      键值
      * @return
      */
     <K> boolean existsAll(String namespace, Collection<K> keys);
@@ -262,18 +261,14 @@ public interface Cache {
 
     /**
      * 分布式锁
-     * <br/>
-     * 默认抛出不支持操作异常
      *
-     * @param lockKey                        锁的key
-     * @param lockValidityTimeInMilliseconds 锁的有效时间(ms)
-     * @param supplier                       被锁的操作
-     * @param <R>                            被锁方法返回类型
+     * @param lockKey 锁的key
+     * @param ttl     锁的有效时间(ms)
      * @return 被锁操作返回值
      * @throws NotSupportOperationException 不支持该操作时抛出异常
      */
-    default <R> R lock(String lockKey, long lockValidityTimeInMilliseconds, Supplier<R> supplier) throws Exception {
-        throw new NotSupportOperationException();
+    default Lock getLock(String lockKey, long ttl) throws Exception {
+        return null;
     }
 
     /**
