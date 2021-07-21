@@ -84,7 +84,7 @@ public interface Cache {
      * @param keys      缓存标识/id集合
      * @return 返回对应缓存对象
      */
-    <K, V> List<V> get(String namespace, Collection<K> keys);
+    <K, V> List<V> getAll(String namespace, Collection<K> keys);
 
     /**
      * 查找缓存，若查找不到则改由回调函数获取
@@ -96,15 +96,15 @@ public interface Cache {
      * @param valueFunc 回调函数
      * @return 返回对应缓存对象
      */
-    default <K, V> List<V> get(String namespace, Collection<K> keys,
-                               Function<List<K>, List<V>> valueFunc, Function<V, K> keyFunc) {
-        List<V> values    = get(namespace, keys);
+    default <K, V> List<V> getAll(String namespace, Collection<K> keys,
+                                  Function<List<K>, List<V>> valueFunc, Function<V, K> keyFunc) {
+        List<V> values    = getAll(namespace, keys);
         var     cacheKeys = values.stream().map(keyFunc).collect(Collectors.toList());
         var     missKeys  = keys.stream().filter(k -> !cacheKeys.contains(k)).collect(Collectors.toList());
         Optional.ofNullable(valueFunc.apply(missKeys)).filter(l -> !l.isEmpty()).ifPresent(vList -> {
             var map = new HashMap<K, V>();
             vList.forEach(v -> map.put(keyFunc.apply(v), v));
-            put(namespace, map);
+            putAll(namespace, map);
             values.addAll(vList);
         });
 
@@ -148,7 +148,7 @@ public interface Cache {
      * @param <V>         值类型
      * @return 执行结果
      */
-    <K, V> void put(String namespace, Map<K, V> keyValueMap);
+    <K, V> void putAll(String namespace, Map<K, V> keyValueMap);
 
     /**
      * 如果不存在则添加缓存
@@ -181,7 +181,7 @@ public interface Cache {
      * @param keyValueMap 缓存key和对象的map<K, V>
      * @return 执行结果
      */
-    <K, V> boolean putIfAbsent(String namespace, Map<K, V> keyValueMap);
+    <K, V> boolean putAllIfAbsent(String namespace, Map<K, V> keyValueMap);
 
     /**
      * 如果不存在则添加缓存
@@ -193,7 +193,7 @@ public interface Cache {
      * @param ttl         time to live (ms)
      * @return 执行结果
      */
-    <K, V> boolean putIfAbsent(String namespace, Map<K, V> keyValueMap, long ttl);
+    <K, V> boolean putAllIfAbsent(String namespace, Map<K, V> keyValueMap, long ttl);
 
     // endregion
 
@@ -203,11 +203,21 @@ public interface Cache {
      * 移除指定缓存（非模糊匹配）
      *
      * @param namespace 命名空间（类似组的概念）
-     * @param keys       缓存标识/id
+     * @param key       缓存标识/id
      * @param <K>       键类型
      * @return 执行结果
      */
-    <K> boolean remove(String namespace, K... keys);
+    <K> boolean remove(String namespace, K key);
+
+    /**
+     * 移除指定缓存（非模糊匹配）
+     *
+     * @param <K>       键类型
+     * @param namespace 命名空间（类似组的概念）
+     * @param keys       缓存标识/id
+     * @return 执行结果
+     */
+    <K> boolean removeAll(String namespace, Collection<K> keys);
 
     // endregion
 
@@ -222,7 +232,7 @@ public interface Cache {
     boolean clear(String namespace);
 
     /**
-     * 清除当前应用所有缓存
+     * 清除当前所有缓存
      *
      * @return 执行结果
      */
@@ -239,8 +249,16 @@ public interface Cache {
      * @param keys       键值
      * @return
      */
-    @SuppressWarnings("unchecked")
-    <K> boolean exists(String namespace, K... keys);
+    <K> boolean existsAll(String namespace, Collection<K> keys);
+
+    /**
+     * 查看指定缓存是否存在
+     *
+     * @param namespace 命名空间
+     * @param key       键值
+     * @return 存在则为 true，否则 false
+     */
+    <K> boolean exists(String namespace, K key);
 
     /**
      * 分布式锁

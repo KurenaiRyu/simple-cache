@@ -19,6 +19,7 @@ import java.util.*;
 
 @Slf4j
 public class LettuceCache extends LettuceCacheAbstract {
+
     public LettuceCache(String uri) {
         super(uri);
     }
@@ -55,7 +56,7 @@ public class LettuceCache extends LettuceCacheAbstract {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <K, V> List<V> get(String namespace, Collection<K> keys) {
+    public <K, V> List<V> getAll(String namespace, Collection<K> keys) {
         if (keys.isEmpty()) return Collections.emptyList();
         return (List<V>) execCmd(cmd -> cmd.mget(keys.stream().map(k -> buildKey(namespace, k)).toArray(String[]::new)));
     }
@@ -71,7 +72,7 @@ public class LettuceCache extends LettuceCacheAbstract {
     }
 
     @Override
-    public <K, V> void put(String namespace, Map<K, V> keyValueMap) {
+    public <K, V> void putAll(String namespace, Map<K, V> keyValueMap) {
         var map = new HashMap<String, Object>();
         keyValueMap.forEach((k, v) -> map.put(buildKey(namespace, k), v));
         execCmd(cmd -> cmd.mset(map));
@@ -106,14 +107,14 @@ public class LettuceCache extends LettuceCacheAbstract {
     }
 
     @Override
-    public <K, V> boolean putIfAbsent(String namespace, Map<K, V> keyValueMap) {
+    public <K, V> boolean putAllIfAbsent(String namespace, Map<K, V> keyValueMap) {
         var map = new HashMap<String, Object>();
         keyValueMap.forEach((k, v) -> map.put(buildKey(namespace, k), v));
         return execCmd(cmd -> cmd.msetnx(map));
     }
 
     @Override
-    public <K, V> boolean putIfAbsent(String namespace, Map<K, V> keyValueMap, long ttl) {
+    public <K, V> boolean putAllIfAbsent(String namespace, Map<K, V> keyValueMap, long ttl) {
         var map = new HashMap<String, Object>();
         keyValueMap.forEach((k, v) -> map.put(buildKey(namespace, k), v));
         return execCmd(cmd -> {
@@ -137,31 +138,35 @@ public class LettuceCache extends LettuceCacheAbstract {
         });
     }
 
-    @SafeVarargs
     @Override
-    public final <K> boolean remove(String namespace, K... keys) {
-        var redisKeys = new String[keys.length];
-        for (int i = 0; i < keys.length; i++) {
-            redisKeys[i] = buildKey(namespace, keys[i]);
-        }
+    public <K> boolean remove(String namespace, K key) {
+        return execCmd(cmd -> cmd.del(buildKey(namespace, key)) > 0);
+    }
+
+    @Override
+    public final <K> boolean removeAll(String namespace, Collection<K> keys) {
+        var redisKeys = keys.stream().map(key -> buildKey(namespace, key)).toArray(String[]::new);
         return execCmd(cmd -> cmd.del(redisKeys) > 0);
     }
 
-    @SafeVarargs
     @Override
-    public final <K> boolean exists(String namespace, K... keys) {
-        var redisKeys = new String[keys.length];
-        for (int i = 0; i < keys.length; i++) {
-            redisKeys[i] = buildKey(namespace, keys[i]);
-        }
-        return execCmd(cmd -> cmd.exists(redisKeys) > 0);
+    public final <K> boolean existsAll(String namespace, Collection<K> keys) {
+        return execCmd(cmd -> cmd.exists(buildKeys(namespace, keys)) > 0);
+    }
+
+    @Override
+    public final <K> boolean exists(String namespace, K key) {
+        return execCmd(cmd -> cmd.exists(buildKey(namespace, key)) > 0);
     }
 
     @Override
     public boolean clear(String namespace) {
-        return execCmd(cmd -> cmd.del(cmd.keys(buildNamespacePatternKey(namespace)).toArray(String[]::new)) > 0);
+        return execCmd(cmd -> cmd.del(cmd.keys(buildNamespacePatternKey(namespace)).toArray(new String[0])) > 0);
     }
 
+    /**
+     * 清除当前库所有缓存
+     */
     @Override
     public boolean clearAll() {
         execCmd(RedisServerCommands::flushdb);

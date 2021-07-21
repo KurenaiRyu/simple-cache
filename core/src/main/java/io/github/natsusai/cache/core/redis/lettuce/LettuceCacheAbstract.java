@@ -15,10 +15,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
+import java.util.Collection;
 import java.util.function.Function;
 
-import static io.github.natsusai.cache.core.util.StringPool.COLON;
-import static io.github.natsusai.cache.core.util.StringPool.STAR;
+import static io.github.natsusai.cache.core.utils.StringPool.COLON;
+import static io.github.natsusai.cache.core.utils.StringPool.STAR;
 
 /**
  * Lettuce Cache Abstract
@@ -84,14 +85,26 @@ public abstract class LettuceCacheAbstract implements RedisCache {
     }
 
     /**
-     * 生成缓存key
+     * 构建redis键值
      *
      * @param namespace 命名空间
      * @param key       缓存标识/id
-     * @return 缓存key
+     * @return redis键值
      */
     protected <K> String buildKey(String namespace, K key) {
         return String.join(CONNECTOR, namespace, String.valueOf(key));
+    }
+
+    /**
+     * 构建redis键值
+     *
+     * @param namespace 命名空间
+     * @param keys 键值集合
+     * @param <K> 键值类型
+     * @return redis键值集合
+     */
+    protected <K>  String[] buildKeys(String namespace, Collection<K> keys) {
+        return keys.stream().map(key -> buildKey(namespace, key)).toArray(String[]::new);
     }
 
     /**

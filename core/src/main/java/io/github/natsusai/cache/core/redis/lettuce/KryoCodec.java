@@ -1,6 +1,6 @@
 package io.github.natsusai.cache.core.redis.lettuce;
 
-import io.github.natsusai.cache.core.util.KryoUtil;
+import io.github.natsusai.cache.core.utils.KryoUtil;
 import io.lettuce.core.codec.RedisCodec;
 
 import java.nio.ByteBuffer;

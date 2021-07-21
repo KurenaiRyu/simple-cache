@@ -1,4 +1,4 @@
-package io.github.natsusai.cache.core.util;
+package io.github.natsusai.cache.core.utils;
 
 import io.github.natsusai.cache.core.redis.User;
 import org.junit.Test;

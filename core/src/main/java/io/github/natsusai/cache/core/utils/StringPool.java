@@ -1,4 +1,4 @@
-package io.github.natsusai.cache.core.util;
+package io.github.natsusai.cache.core.utils;
 
 /**
  * Copy to jodd.util

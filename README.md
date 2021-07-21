@@ -17,9 +17,12 @@
 （暂时只实现了redis其中一种）  
 - LettuceCache
   
-    e.g.
     ```java
+    e.g.
+    Cache cache = CacheFactory("host", 6379);
+    or
     Cache cache = new LettuceCache("localhost", 6379);
+  
     User user = cache.get(User.class.getName(), 123L);
     ```
 

@@ -1,4 +1,4 @@
-package io.github.natsusai.cache.core.util;
+package io.github.natsusai.cache.core.utils;
 
 /**
  * twitter的snowflake算法 -- java实现
