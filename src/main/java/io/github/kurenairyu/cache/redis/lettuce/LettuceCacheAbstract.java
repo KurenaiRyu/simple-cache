@@ -126,10 +126,14 @@ public abstract class LettuceCacheAbstract extends RedisCacheAbstract {
      * @return 执行方法返回值
      */
     protected <V, R> R execCmd(Function<RedisClusterCommands<String, V>, R> function) {
-        try (StatefulConnection<String, V> connection = connect()) {
+        StatefulConnection<String, V> connection = null;
+        try {
+            connection = connect();
             return function.apply(sync(connection));
         } catch (Exception e) {
             log.error("Execute sync command error!", e);
+        } finally {
+            if (connection != null) POOL.returnObject(connection);
         }
         return null;
     }
@@ -140,11 +144,15 @@ public abstract class LettuceCacheAbstract extends RedisCacheAbstract {
      * @param function 执行命令方法
      * @return 执行方法返回值
      */
-    protected <V, R> R execAsyncCmd(Function<RedisClusterAsyncCommands<String, V>, R> function) {
-        try (StatefulConnection<String, V> connection = connect()) {
+    protected <V, R> CompletableFuture<R> execAsyncCmd(Function<RedisClusterAsyncCommands<String, V>, CompletableFuture<R>> function) {
+        StatefulConnection<String, V> connection = null;
+        try {
+            connection = connect();
             return function.apply(async(connection));
         } catch (Exception e) {
-            log.error("Execute async command error!", e);
+            log.error("Execute sync command error!", e);
+        } finally {
+            if (connection != null) POOL.returnObject(connection);
         }
         return null;
     }
