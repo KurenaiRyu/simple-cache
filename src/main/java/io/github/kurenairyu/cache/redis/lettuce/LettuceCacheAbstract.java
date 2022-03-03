@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import static io.github.kurenairyu.cache.util.StringPool.COLON;
@@ -95,10 +96,11 @@ public abstract class LettuceCacheAbstract extends RedisCacheAbstract {
 
     /**
      * 生成同步命令对象
+     *
      * @param conn redis连接
      * @return redis同步命令对象
      */
-    private <V> RedisClusterCommands<String, V> sync(StatefulConnection<String, V> conn) {
+    <V> RedisClusterCommands<String, V> sync(StatefulConnection<String, V> conn) {
         if (isCluster()) {
             return ((StatefulRedisClusterConnection<String, V>) conn).sync();
         } else {
@@ -108,10 +110,11 @@ public abstract class LettuceCacheAbstract extends RedisCacheAbstract {
 
     /**
      * 生成异步命令对象
+     *
      * @param conn redis连接
      * @return redis异步命令对象
      */
-    private <V> RedisClusterAsyncCommands<String, V> async(StatefulConnection<String, V> conn) {
+    <V> RedisClusterAsyncCommands<String, V> async(StatefulConnection<String, V> conn) {
         if (isCluster()) {
             return ((StatefulRedisClusterConnection<String, V>) conn).async();
         } else {
@@ -163,5 +166,9 @@ public abstract class LettuceCacheAbstract extends RedisCacheAbstract {
         try (var connection = connect()) {
             return (T) async(connection);
         }
+    }
+
+    public void shutdown() {
+        POOL.close();
     }
 }
