@@ -3,19 +3,17 @@ package io.github.kurenairyu.cache.redis.lettuce;
 import io.github.kurenairyu.cache.redis.RedisCacheAbstract;
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
-import io.lettuce.core.api.StatefulConnection;
 import io.lettuce.core.api.StatefulRedisConnection;
-import io.lettuce.core.cluster.RedisClusterClient;
-import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
-import io.lettuce.core.cluster.api.async.RedisClusterAsyncCommands;
-import io.lettuce.core.cluster.api.sync.RedisClusterCommands;
+import io.lettuce.core.api.async.RedisAsyncCommands;
+import io.lettuce.core.api.sync.RedisCommands;
 import io.lettuce.core.codec.RedisCodec;
 import io.lettuce.core.support.ConnectionPoolSupport;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import static io.github.kurenairyu.cache.util.StringPool.COLON;
@@ -26,11 +24,11 @@ import static io.github.kurenairyu.cache.util.StringPool.COLON;
  * @author Kurenai
  * @since 2020-03-10 15:56
  */
-@Slf4j
+@Log4j2
 public abstract class LettuceCacheAbstract extends RedisCacheAbstract {
 
-    protected final GenericObjectPool<StatefulConnection<String, ?>> POOL;
-    protected final String                                           CONNECTOR = COLON;
+    protected final GenericObjectPool<StatefulRedisConnection<String, ?>> POOL;
+    protected final String                                                CONNECTOR = COLON;
 
     public LettuceCacheAbstract(String uri) {
         this(RedisURI.create(uri), new KryoCodec<>());
@@ -65,18 +63,12 @@ public abstract class LettuceCacheAbstract extends RedisCacheAbstract {
         this(redisURI, redisCodec, null);
     }
 
-    public LettuceCacheAbstract(RedisURI redisURI, RedisCodec<String, ?> redisCodec, GenericObjectPoolConfig<StatefulConnection<String, ?>> poolConfig) {
-        this.POOL = ConnectionPoolSupport.createGenericObjectPool(() -> {
-            if (isCluster()) {
-                return RedisClusterClient.create(redisURI).connect(redisCodec);
-            } else {
-                return RedisClient.create(redisURI).connect(redisCodec);
-            }
-        }, poolConfig == null ? defaultPoolConfig() : poolConfig);
+    public LettuceCacheAbstract(RedisURI redisURI, RedisCodec<String, ?> redisCodec, GenericObjectPoolConfig<StatefulRedisConnection<String, ?>> poolConfig) {
+        this.POOL = ConnectionPoolSupport.createGenericObjectPool(() -> RedisClient.create(redisURI).connect(redisCodec), poolConfig == null ? defaultPoolConfig() : poolConfig);
     }
 
-    protected GenericObjectPoolConfig<StatefulConnection<String, ?>> defaultPoolConfig() {
-        var poolConfig = new GenericObjectPoolConfig<StatefulConnection<String, ?>>();
+    protected GenericObjectPoolConfig<StatefulRedisConnection<String, ?>> defaultPoolConfig() {
+        var poolConfig = new GenericObjectPoolConfig<StatefulRedisConnection<String, ?>>();
         poolConfig.setMaxTotal(20);
         poolConfig.setMaxIdle(8);
         poolConfig.setMinIdle(0);
@@ -85,40 +77,17 @@ public abstract class LettuceCacheAbstract extends RedisCacheAbstract {
 
     /**
      * 从连接池获取一个连接
+     *
      * @return redis连接对象
      * @throws Exception
      */
 
     @SuppressWarnings("unchecked")
-    protected <V> StatefulConnection<String, V> connect() throws Exception {
-        return (StatefulConnection<String, V>) POOL.borrowObject();
-    }
-
-    /**
-     * 生成同步命令对象
-     *
-     * @param conn redis连接
-     * @return redis同步命令对象
-     */
-    <V> RedisClusterCommands<String, V> sync(StatefulConnection<String, V> conn) {
-        if (isCluster()) {
-            return ((StatefulRedisClusterConnection<String, V>) conn).sync();
-        } else {
-            return ((StatefulRedisConnection<String, V>) conn).sync();
-        }
-    }
-
-    /**
-     * 生成异步命令对象
-     *
-     * @param conn redis连接
-     * @return redis异步命令对象
-     */
-    <V> RedisClusterAsyncCommands<String, V> async(StatefulConnection<String, V> conn) {
-        if (isCluster()) {
-            return ((StatefulRedisClusterConnection<String, V>) conn).async();
-        } else {
-            return ((StatefulRedisConnection<String, V>) conn).async();
+    protected <V> StatefulRedisConnection<String, V> connect() {
+        try {
+            return (StatefulRedisConnection<String, V>) POOL.borrowObject();
+        } catch (Exception e) {
+            throw new RuntimeException("Borrow connection fail", e);
         }
     }
 
@@ -128,17 +97,16 @@ public abstract class LettuceCacheAbstract extends RedisCacheAbstract {
      * @param function 执行命令方法
      * @return 执行方法返回值
      */
-    protected <V, R> R execCmd(Function<RedisClusterCommands<String, V>, R> function) {
-        StatefulConnection<String, V> connection = null;
+    protected <V, R> R execCmd(Function<RedisCommands<String, V>, R> function) {
+        StatefulRedisConnection<String, V> connection = connect();
         try {
-            connection = connect();
-            return function.apply(sync(connection));
+            return function.apply(connection.sync());
         } catch (Exception e) {
             log.error("Execute sync command error!", e);
+            throw new RuntimeException("Execute sync command error!", e);
         } finally {
             if (connection != null) POOL.returnObject(connection);
         }
-        return null;
     }
 
     /**
@@ -147,25 +115,18 @@ public abstract class LettuceCacheAbstract extends RedisCacheAbstract {
      * @param function 执行命令方法
      * @return 执行方法返回值
      */
-    protected <V, R> CompletableFuture<R> execAsyncCmd(Function<RedisClusterAsyncCommands<String, V>, CompletableFuture<R>> function) {
-        StatefulConnection<String, V> connection = null;
-        try {
-            connection = connect();
-            return function.apply(async(connection));
-        } catch (Exception e) {
-            log.error("Execute sync command error!", e);
-        } finally {
-            if (connection != null) POOL.returnObject(connection);
-        }
-        return null;
-    }
-
-    @Override
     @SuppressWarnings("unchecked")
-    public <T> T getExec() throws Exception {
-        try (var connection = connect()) {
-            return (T) async(connection);
-        }
+    protected <V, R> CompletableFuture<R> execAsyncCmd(Function<RedisAsyncCommands<String, V>, CompletionStage<R>> function) {
+        StatefulRedisConnection<String, V> connection = connect();
+        return (CompletableFuture<R>) function.apply(connection.async()).handle((r, e) -> {
+            POOL.returnObject(connection);
+            if (e == null) {
+                return CompletableFuture.completedFuture(r);
+            } else {
+                log.error("Execute sync command error!", e);
+                return CompletableFuture.failedFuture(e);
+            }
+        }).thenCompose(f -> f);
     }
 
     public void shutdown() {

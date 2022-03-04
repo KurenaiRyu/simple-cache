@@ -2,12 +2,10 @@ package io.github.kurenairyu.cache.redis.lettuce;
 
 import io.github.kurenairyu.cache.util.SnowFlakeGenerator;
 import io.lettuce.core.api.sync.RedisTransactionalCommands;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.log4j.Log4j2;
 
+@Log4j2
 public class LettuceLock extends LettuceLockAbstract {
-
-    private final Logger log = LoggerFactory.getLogger(LettuceLock.class);
 
     private final LettuceCacheAbstract cache;
     private final SnowFlakeGenerator   snowFlakeGenerator = SnowFlakeGenerator.getInstance();
@@ -53,8 +51,7 @@ public class LettuceLock extends LettuceLockAbstract {
             if (currentUid == null) {
                 log.debug("当前锁[{}]为空，非正常释放! 本次uid: {}", lockKey, uid);
                 return false;
-            }
-            else if (currentUid.equals(uid)) {
+            } else if (currentUid.equals(uid)) {
                 if (cmd.del(lockKey) > 0) {
                     log.debug("释放锁[{}]，本次uid: {}", lockKey, uid);
                 } else {

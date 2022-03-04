@@ -1,17 +1,17 @@
 package io.github.kurenairyu.cache.redis.lettuce;
 
-import io.lettuce.core.RedisFuture;
 import io.lettuce.core.RedisURI;
-import io.lettuce.core.api.StatefulConnection;
-import io.lettuce.core.api.async.RedisTransactionalAsyncCommands;
+import io.lettuce.core.api.StatefulRedisConnection;
+import io.lettuce.core.api.async.RedisServerAsyncCommands;
 import io.lettuce.core.api.sync.RedisServerCommands;
 import io.lettuce.core.api.sync.RedisTransactionalCommands;
 import io.lettuce.core.codec.RedisCodec;
-import lombok.extern.slf4j.Slf4j;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  * @since 2020-03-10 15:56
  */
 
-@Slf4j
+@Log4j2
 public class LettuceCache extends LettuceCacheAbstract {
 
     public LettuceCache(String uri) {
@@ -48,7 +48,7 @@ public class LettuceCache extends LettuceCacheAbstract {
         super(redisURI, redisCodec);
     }
 
-    public LettuceCache(RedisURI redisURI, RedisCodec<String, ?> redisCodec, GenericObjectPoolConfig<StatefulConnection<String, ?>> poolConfig) {
+    public LettuceCache(RedisURI redisURI, RedisCodec<String, ?> redisCodec, GenericObjectPoolConfig<StatefulRedisConnection<String, ?>> poolConfig) {
         super(redisURI, redisCodec, poolConfig);
     }
 
@@ -66,25 +66,30 @@ public class LettuceCache extends LettuceCacheAbstract {
      * @return 返回对应缓存对象
      */
     @Override
+    @SuppressWarnings("unchecked")
     public <K, V> CompletableFuture<V> getAsync(String namespace, K key) {
-        return execAsyncCmd(cmd -> (CompletableFuture<V>) cmd.get(buildKey(namespace, key)));
+        return (CompletableFuture<V>) execAsyncCmd(cmd -> cmd.get(buildKey(namespace, key)));
     }
 
-    @SuppressWarnings("unchecked")
     @Override
+    @SuppressWarnings("unchecked")
     public <K, V> Map<K, V> getAll(String namespace, Collection<K> keys) {
         if (keys.isEmpty()) return Collections.emptyMap();
-        return execCmd(cmd -> cmd.mget(keys.stream().map(k -> buildKey(namespace, k)).toArray(String[]::new)))
-                .stream()
-                .collect(Collectors.toMap(o -> (K) o.getKey(), o -> (V) o.getValue()));
+        Map<String, K> map = keys.stream().collect(Collectors.toMap(key -> buildKey(namespace, key), key -> key));
+
+        return execCmd(cmd -> cmd.mget(map.keySet().toArray(new String[0]))
+                .stream().collect(Collectors.toMap(map::get, kv -> (V) kv.getValue())));
     }
 
-    @SuppressWarnings("unchecked")
     @Override
+    @SuppressWarnings("unchecked")
     public <K, V> CompletableFuture<Map<K, V>> getAllAsync(String namespace, Collection<K> keys) {
         if (keys.isEmpty()) return CompletableFuture.completedFuture(Collections.emptyMap());
-        return execAsyncCmd(cmd -> (CompletableFuture<Map<K, V>>) cmd.mget(keys.stream().map(k -> buildKey(namespace, k)).toArray(String[]::new))
-                .thenApply(items -> items.stream().collect(Collectors.toMap(o -> (K) o.getKey(), o -> (V) o.getValue())))
+        Map<String, K> map = keys.stream().collect(Collectors.toMap(key -> buildKey(namespace, key), key -> key));
+
+        return execAsyncCmd(cmd ->
+                cmd.mget(map.keySet().toArray(new String[0]))).thenApply(kvList ->
+                kvList.stream().collect(Collectors.toMap(map::get, kv -> (V) kv.getValue()))
         );
     }
 
@@ -103,7 +108,7 @@ public class LettuceCache extends LettuceCacheAbstract {
      */
     @Override
     public <K, V> CompletableFuture<String> putAsync(String namespace, K key, V value) {
-        return execAsyncCmd(cmd -> (CompletableFuture<String>) cmd.set(buildKey(namespace, key), value));
+        return execAsyncCmd(cmd -> cmd.set(buildKey(namespace, key), value));
     }
 
     @Override
@@ -122,7 +127,7 @@ public class LettuceCache extends LettuceCacheAbstract {
      */
     @Override
     public <K, V> CompletableFuture<String> putAsync(String namespace, K key, V value, long ttl) {
-        return execAsyncCmd(cmd -> (CompletableFuture<String>) cmd.psetex(buildKey(namespace, key), ttl, value));
+        return execAsyncCmd(cmd -> cmd.psetex(buildKey(namespace, key), ttl, value));
     }
 
     @Override
@@ -143,7 +148,7 @@ public class LettuceCache extends LettuceCacheAbstract {
     public <K, V> CompletableFuture<String> putAllAsync(String namespace, Map<K, V> keyValueMap) {
         var map = new HashMap<String, Object>();
         keyValueMap.forEach((k, v) -> map.put(buildKey(namespace, k), v));
-        return execAsyncCmd(cmd -> (CompletableFuture<String>) cmd.mset(map));
+        return execAsyncCmd(cmd -> cmd.mset(map));
     }
 
     @Override
@@ -161,27 +166,23 @@ public class LettuceCache extends LettuceCacheAbstract {
      */
     @Override
     public <K, V> CompletableFuture<Boolean> putIfAbsentAsync(String namespace, K key, V value) {
-        return execAsyncCmd(cmd -> (CompletableFuture<Boolean>) cmd.setnx(buildKey(namespace, key), value));
+        return execAsyncCmd(cmd -> cmd.setnx(buildKey(namespace, key), value));
     }
 
     @Override
     public <K, V> boolean putIfAbsent(String namespace, K key, V value, long ttl) {
         final var redisKey = buildKey(namespace, key);
         return execCmd(cmd -> {
-            if (cmd instanceof RedisTransactionalCommands) {
-                try {
-                    ((RedisTransactionalCommands<?, ?>) cmd).multi();
-                    if (Boolean.FALSE.equals(cmd.setnx(redisKey, value)) || Boolean.FALSE.equals(cmd.expire(redisKey, ttl))) {
-                        ((RedisTransactionalCommands<?, ?>) cmd).discard();
-                        return false;
-                    }
-                    ((RedisTransactionalCommands<?, ?>) cmd).exec();
-                } catch (Exception e) {
-                    ((RedisTransactionalCommands<?, ?>) cmd).discard();
-                    throw e;
+            try {
+                cmd.multi();
+                if (Boolean.FALSE.equals(cmd.setnx(redisKey, value)) || Boolean.FALSE.equals(cmd.expire(redisKey, ttl))) {
+                    cmd.discard();
+                    return false;
                 }
-            } else {
-                return !Boolean.FALSE.equals(cmd.setnx(redisKey, value)) && !Boolean.FALSE.equals(cmd.expire(redisKey, ttl));
+                cmd.exec();
+            } catch (Exception e) {
+                cmd.discard();
+                throw e;
             }
             return true;
         });
@@ -197,12 +198,12 @@ public class LettuceCache extends LettuceCacheAbstract {
      * @return 执行结果
      */
     @Override
+    @SuppressWarnings("unchecked")
     public <K, V> CompletableFuture<Boolean> putIfAbsentAsync(String namespace, K key, V value, long ttl) {
         final var redisKey = buildKey(namespace, key);
-        return execAsyncCmd(cmd -> {
-            if (cmd instanceof RedisTransactionalAsyncCommands) {
-                return (CompletableFuture<Boolean>) ((RedisTransactionalAsyncCommands<?, ?>) cmd).multi().thenCompose(ret -> cmd.setnx(redisKey, value)
-                        .thenCombine(
+        return execAsyncCmd(cmd ->
+                (CompletableFuture<Boolean>) cmd.multi().thenCompose(ret ->
+                        cmd.setnx(redisKey, value).thenCombine(
                                 cmd.expire(redisKey, ttl),
                                 (setnx, expire) -> {
                                     if (Boolean.FALSE.equals(setnx) || Boolean.FALSE.equals(expire)) {
@@ -214,19 +215,11 @@ public class LettuceCache extends LettuceCacheAbstract {
                                 }
                         )).handle((ret, ex) -> {
                     if (ex == null) {
-                        return ((RedisTransactionalAsyncCommands<?, ?>) cmd).exec().thenApply(r -> ret);
+                        return cmd.exec().thenApply(r -> ret);
                     } else {
-                        return ((RedisTransactionalAsyncCommands<?, ?>) cmd).discard().thenCompose(r -> CompletableFuture.failedFuture(ex));
+                        return cmd.discard().thenCompose(r -> CompletableFuture.failedFuture(ex));
                     }
-                }).thenCompose(f -> f);
-            } else {
-                return (CompletableFuture<Boolean>) cmd.setnx(redisKey, value)
-                        .thenCombine(
-                                cmd.expire(redisKey, ttl),
-                                (setnx, expire) -> !Boolean.FALSE.equals(setnx) || !Boolean.FALSE.equals(expire)
-                        );
-            }
-        });
+                }).thenCompose(f -> f));
     }
 
     @Override
@@ -247,7 +240,7 @@ public class LettuceCache extends LettuceCacheAbstract {
     public <K, V> CompletableFuture<Boolean> putAllIfAbsentAsync(String namespace, Map<K, V> keyValueMap) {
         var map = new HashMap<String, Object>();
         keyValueMap.forEach((k, v) -> map.put(buildKey(namespace, k), v));
-        return execAsyncCmd(cmd -> (CompletableFuture<Boolean>) cmd.msetnx(map));
+        return execAsyncCmd(cmd -> cmd.msetnx(map));
     }
 
     @Override
@@ -255,21 +248,16 @@ public class LettuceCache extends LettuceCacheAbstract {
         var map = new HashMap<String, Object>();
         keyValueMap.forEach((k, v) -> map.put(buildKey(namespace, k), v));
         return execCmd(cmd -> {
-            if (cmd instanceof RedisTransactionalCommands) {
-                try {
-                    ((RedisTransactionalCommands<?, ?>) cmd).multi();
-                    if (!cmd.msetnx(map)) {
-                        ((RedisTransactionalCommands<?, ?>) cmd).discard();
-                        return false;
-                    }
-                    map.keySet().forEach(k -> cmd.pexpire(k, ttl));
-                    ((RedisTransactionalCommands<?, ?>) cmd).exec();
-                } catch (Exception e) {
-                    ((RedisTransactionalCommands<?, ?>) cmd).discard();
+            try {
+                cmd.multi();
+                if (!cmd.msetnx(map)) {
+                    cmd.discard();
+                    return false;
                 }
-            } else {
-                cmd.msetnx(map);
                 map.keySet().forEach(k -> cmd.pexpire(k, ttl));
+                cmd.exec();
+            } catch (Exception e) {
+                cmd.discard();
             }
             return true;
         });
@@ -284,49 +272,28 @@ public class LettuceCache extends LettuceCacheAbstract {
      * @return 执行结果
      */
     @Override
+    @SuppressWarnings("unchecked")
     public <K, V> CompletableFuture<Boolean> putAllIfAbsentAsync(String namespace, Map<K, V> keyValueMap, long ttl) {
         var map = new HashMap<String, Object>();
         keyValueMap.forEach((k, v) -> map.put(buildKey(namespace, k), v));
-        return execAsyncCmd(cmd -> {
-            if (cmd instanceof RedisTransactionalAsyncCommands) {
-                return (CompletableFuture<Boolean>) ((RedisTransactionalAsyncCommands<?, ?>) cmd).multi().thenCompose(ret -> {
-                    var futures = new ArrayList<RedisFuture<Boolean>>();
-                    map.keySet().forEach(k -> futures.add(cmd.pexpire(k, ttl)));
-                    return CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).thenApply(r -> true);
-                }).thenCombine(cmd.msetnx(map), (a, b) -> {
-                    if (Boolean.FALSE.equals(a) || Boolean.FALSE.equals(b)) {
-                        ((RedisTransactionalCommands<?, ?>) cmd).discard();
-                        return false;
-                    } else {
-                        return true;
-                    }
-                }).handle((ret, ex) -> {
-                    if (ex == null) {
-                        return ((RedisTransactionalAsyncCommands<?, ?>) cmd).exec().thenApply(r -> ret);
-                    } else {
-                        return ((RedisTransactionalAsyncCommands<?, ?>) cmd).discard().thenCompose(r -> CompletableFuture.failedFuture(ex));
-                    }
-                }).thenCompose(f -> f);
+        return execAsyncCmd(cmd -> (CompletableFuture<Boolean>) cmd.multi().thenCompose(ret -> {
+            var futures = new ArrayList<CompletableFuture<Boolean>>();
+            map.keySet().forEach(k -> futures.add(cmd.pexpire(k, ttl).toCompletableFuture()));
+            return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).thenApply(r -> true);
+        }).thenCombine(cmd.msetnx(map), (a, b) -> {
+            if (Boolean.FALSE.equals(a) || Boolean.FALSE.equals(b)) {
+                ((RedisTransactionalCommands<?, ?>) cmd).discard();
+                return false;
             } else {
-                var futures = new ArrayList<RedisFuture<Boolean>>();
-                map.keySet().forEach(k -> futures.add(cmd.pexpire(k, ttl)));
-                return (CompletableFuture<Boolean>) CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
-                        .thenApply(r -> true).thenCombine(cmd.msetnx(map), (a, b) -> {
-                            if (Boolean.FALSE.equals(a) || Boolean.FALSE.equals(b)) {
-                                ((RedisTransactionalCommands<?, ?>) cmd).discard();
-                                return false;
-                            } else {
-                                return true;
-                            }
-                        }).handle((ret, ex) -> {
-                            if (ex == null) {
-                                return ((RedisTransactionalAsyncCommands<?, ?>) cmd).exec().thenApply(r -> ret);
-                            } else {
-                                return ((RedisTransactionalAsyncCommands<?, ?>) cmd).discard().thenCompose(r -> CompletableFuture.failedFuture(ex));
-                            }
-                        }).thenCompose(f -> f);
+                return true;
             }
-        });
+        }).handle((ret, ex) -> {
+            if (ex == null) {
+                return cmd.exec().thenApply(r -> ret);
+            } else {
+                return cmd.discard().thenCompose(r -> CompletableFuture.failedFuture(ex));
+            }
+        }).thenCompose(f -> f));
     }
 
     @Override
@@ -343,7 +310,7 @@ public class LettuceCache extends LettuceCacheAbstract {
      */
     @Override
     public <K> CompletableFuture<Boolean> removeAsync(String namespace, K key) {
-        return execAsyncCmd(cmd -> (CompletableFuture<Boolean>) cmd.del(buildKey(namespace, key)).thenApply(r -> r > 0));
+        return execAsyncCmd(cmd -> cmd.del(buildKey(namespace, key)).thenApply(r -> r > 0));
     }
 
     @Override
@@ -362,7 +329,7 @@ public class LettuceCache extends LettuceCacheAbstract {
     @Override
     public <K> CompletableFuture<Boolean> removeAllAsync(String namespace, Collection<K> keys) {
         var redisKeys = keys.stream().map(key -> buildKey(namespace, key)).toArray(String[]::new);
-        return execAsyncCmd(cmd -> (CompletableFuture<Boolean>) cmd.del(redisKeys).thenApply(r -> r > 0));
+        return execAsyncCmd(cmd -> cmd.del(redisKeys).thenApply(r -> r > 0));
     }
 
     @Override
@@ -379,7 +346,7 @@ public class LettuceCache extends LettuceCacheAbstract {
      */
     @Override
     public <K> CompletableFuture<Boolean> existsAllAsync(String namespace, Collection<K> keys) {
-        return execAsyncCmd(cmd -> (CompletableFuture<Boolean>) cmd.exists(buildKeys(namespace, keys)).thenApply(r -> r > 0));
+        return execAsyncCmd(cmd -> cmd.exists(buildKeys(namespace, keys)).thenApply(r -> r > 0));
     }
 
     @Override
@@ -396,7 +363,35 @@ public class LettuceCache extends LettuceCacheAbstract {
      */
     @Override
     public <K> CompletableFuture<Boolean> existsAsync(String namespace, K key) {
-        return execAsyncCmd(cmd -> (CompletableFuture<Boolean>) cmd.exists(buildKey(namespace, key)).thenApply(count -> count > 0));
+        return execAsyncCmd(cmd -> cmd.exists(buildKey(namespace, key)).thenApply(count -> count > 0));
+    }
+
+    /**
+     * 更新过期时间
+     *
+     * @param namespace 命名空间
+     * @param key       键值
+     * @param ttl
+     * @param timeUnit
+     * @return 存在则为 true，否则 false
+     */
+    @Override
+    public <K> Boolean expire(String namespace, K key, long ttl, TimeUnit timeUnit) {
+        return execCmd(cmd -> cmd.pexpire(buildKey(namespace, key), timeUnit.toMillis(ttl)));
+    }
+
+    /**
+     * 更新过期时间
+     *
+     * @param namespace 命名空间
+     * @param key       键值
+     * @param ttl
+     * @param timeUnit
+     * @return 存在则为 true，否则 false
+     */
+    @Override
+    public <K> CompletableFuture<Boolean> expireAsync(String namespace, K key, long ttl, TimeUnit timeUnit) {
+        return execAsyncCmd(cmd -> cmd.pexpire(buildKey(namespace, key), timeUnit.toMillis(ttl)));
     }
 
     @Override
@@ -412,9 +407,9 @@ public class LettuceCache extends LettuceCacheAbstract {
      */
     @Override
     public CompletableFuture<Boolean> clearAsync(String namespace) {
-        return execAsyncCmd(cmd -> (CompletableFuture<Boolean>) cmd.keys(buildNamespacePatternKey(namespace))
+        return execAsyncCmd(cmd -> cmd.keys(buildNamespacePatternKey(namespace))
                 .thenCompose(keys -> cmd.del(keys.toArray(new String[0])))
-                .thenApply(r -> r > 0));
+                .thenApply(r -> r > 0).toCompletableFuture());
     }
 
     /**
@@ -433,7 +428,7 @@ public class LettuceCache extends LettuceCacheAbstract {
      */
     @Override
     public CompletableFuture<String> clearAllAsync() {
-        return execAsyncCmd(cmd -> (CompletableFuture<String>) cmd.flushdb());
+        return execAsyncCmd(RedisServerAsyncCommands::flushdb);
     }
 
     /**
@@ -442,8 +437,9 @@ public class LettuceCache extends LettuceCacheAbstract {
      * @return 客户端实例
      */
     @Override
-    public <T> T getExec() throws Exception {
-        return (T) sync(connect());
+    @SuppressWarnings("unchecked")
+    public <T> T getExec() {
+        return (T) connect().sync();
     }
 
     /**
@@ -452,8 +448,9 @@ public class LettuceCache extends LettuceCacheAbstract {
      * @return 客户端实例
      */
     @Override
-    public <T> T getExecAsync() throws Exception {
-        return (T) async(connect());
+    @SuppressWarnings("unchecked")
+    public <T> T getExecAsync() {
+        return (T) connect().async();
     }
 
     @Override

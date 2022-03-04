@@ -575,6 +575,24 @@ public interface Cache {
     <K> CompletableFuture<Boolean> existsAsync(String namespace, K key);
 
     /**
+     * 更新过期时间
+     *
+     * @param namespace 命名空间
+     * @param key       键值
+     * @return 存在则为 true，否则 false
+     */
+    <K> Boolean expire(String namespace, K key, long ttl, TimeUnit timeUnit);
+
+    /**
+     * 更新过期时间
+     *
+     * @param namespace 命名空间
+     * @param key       键值
+     * @return 存在则为 true，否则 false
+     */
+    <K> CompletableFuture<Boolean> expireAsync(String namespace, K key, long ttl, TimeUnit timeUnit);
+
+    /**
      * 分布式锁
      *
      * @param lockKey 锁的key
